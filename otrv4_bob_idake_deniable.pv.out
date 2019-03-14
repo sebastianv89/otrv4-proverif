@@ -1,0 +1,261 @@
+Linear part:
+ec_mul(x,ec_mul(y,ec_base)) = ec_mul(y,ec_mul(x,ec_base))
+Completing equations...
+Completed equations:
+ec_mul(x,ec_mul(y,ec_base)) = ec_mul(y,ec_mul(x,ec_base))
+Convergent part:
+Completing equations...
+Completed equations:
+Biprocess:
+{1}new h1: eddsa_private_key;
+{2}new f1: ec_scalar;
+{3}let H1: ec_point = ec_mul(eddsa_scalar(h1),ec_base) in
+{4}let F1: ec_point = ec_mul(f1,ec_base) in
+{5}let cp1: eddsa_signature = eddsa_sign(h1,(H1,F1)) in
+{6}new h2: eddsa_private_key;
+{7}new f2: ec_scalar;
+{8}let H2: ec_point = ec_mul(eddsa_scalar(h2),ec_base) in
+{9}let F2: ec_point = ec_mul(f2,ec_base) in
+{10}let cp2: eddsa_signature = eddsa_sign(h2,(H2,F2)) in
+{11}out(c, (cp1,cp2));
+(
+    {12}!
+    {13}new y_65: ec_scalar;
+    {14}let Y: ec_point = ec_mul(y_65,ec_base) in
+    {15}out(c, Y);
+    {16}in(c, sigma_a: ring_signature);
+    {17}let (=zero,=cp2,=cp1,=Y,X: ec_point,=id2,=id1) = ring_get_msg(sigma_a) in
+    {18}let (=zero,=cp2,=cp1,=Y,=X,=id2,=id1) = ring_verify(sigma_a,H1,F2,Y) in
+    {19}let tb: bitstring = (one,cp2,cp1,Y,X,id2,id1) in
+    {20}let k_66: bitstring = kdf(usageSharedSecret,ec_point_as_bits(ec_mul(y_65,X))) in
+    {21}let ssid: bitstring = kdf(usageSSID,k_66) in
+    {22}out(c, ssid);
+    {23}let priv: ec_scalar = choice[eddsa_scalar(h2),f1] in
+    {24}let pub: ec_point = choice[F1,H2] in
+    {25}new r_67: coins;
+    {26}let sigma_b: ring_signature = internal_ring_sign(priv,pub,X,tb,r_67) in
+    {27}new z: ec_scalar;
+    {28}let Z: ec_point = ec_mul(z,ec_base) in
+    {29}let kmac: bitstring = kdf(usageMACKey,k_66) in
+    {30}let Z_mac: bitstring = kdf(usageAuthMAC,(kmac,ec_point_as_bits(Z))) in
+    {31}out(c, (sigma_b,Z,Z_mac))
+) | (
+    {32}!
+    {33}in(c, m_68: bitstring);
+    {34}out(c, eddsa_sign(h1,m_68))
+) | (
+    {35}!
+    {36}in(c, p: ec_point);
+    {37}out(c, ec_mul(eddsa_scalar(h1),p));
+    {38}out(c, ec_mul(f1,p))
+) | (
+    {39}!
+    {40}in(c, (a_69: ec_point,b_70: ec_point,m_71: bitstring,r_72: coins));
+    {41}out(c, internal_ring_sign(eddsa_scalar(h1),a_69,b_70,m_71,r_72));
+    {42}out(c, internal_ring_sign(f1,a_69,b_70,m_71,r_72))
+) | (
+    {43}phase 1;
+    {44}out(c, (h1,h2,f1,f2))
+)
+
+-- Observational equivalence
+Termination warning: v_7727 <> v_7728 && attacker2_tag_p1(v_7726,v_7727) && attacker2_tag_p1(v_7726,v_7728) -> bad
+Selecting 0
+Termination warning: v_7730 <> v_7731 && attacker2_tag_p1(v_7730,v_7729) && attacker2_tag_p1(v_7731,v_7729) -> bad
+Selecting 0
+Termination warning: v_7734 <> v_7735 && attacker2_ring_signature_p1(v_7733,v_7734) && attacker2_ring_signature_p1(v_7733,v_7735) -> bad
+Selecting 0
+Termination warning: v_7737 <> v_7738 && attacker2_ring_signature_p1(v_7737,v_7736) && attacker2_ring_signature_p1(v_7738,v_7736) -> bad
+Selecting 0
+Termination warning: v_7741 <> v_7742 && attacker2_identity_p1(v_7740,v_7741) && attacker2_identity_p1(v_7740,v_7742) -> bad
+Selecting 0
+Termination warning: v_7744 <> v_7745 && attacker2_identity_p1(v_7744,v_7743) && attacker2_identity_p1(v_7745,v_7743) -> bad
+Selecting 0
+Termination warning: v_7748 <> v_7749 && attacker2_eddsa_signature_p1(v_7747,v_7748) && attacker2_eddsa_signature_p1(v_7747,v_7749) -> bad
+Selecting 0
+Termination warning: v_7751 <> v_7752 && attacker2_eddsa_signature_p1(v_7751,v_7750) && attacker2_eddsa_signature_p1(v_7752,v_7750) -> bad
+Selecting 0
+Termination warning: v_7755 <> v_7756 && attacker2_eddsa_private_key_p1(v_7754,v_7755) && attacker2_eddsa_private_key_p1(v_7754,v_7756) -> bad
+Selecting 0
+Termination warning: v_7758 <> v_7759 && attacker2_eddsa_private_key_p1(v_7758,v_7757) && attacker2_eddsa_private_key_p1(v_7759,v_7757) -> bad
+Selecting 0
+Termination warning: v_7762 <> v_7763 && attacker2_ec_scalar_p1(v_7761,v_7762) && attacker2_ec_scalar_p1(v_7761,v_7763) -> bad
+Selecting 0
+Termination warning: v_7765 <> v_7766 && attacker2_ec_scalar_p1(v_7765,v_7764) && attacker2_ec_scalar_p1(v_7766,v_7764) -> bad
+Selecting 0
+Termination warning: v_7769 <> v_7770 && attacker2_ec_point_p1(v_7768,v_7769) && attacker2_ec_point_p1(v_7768,v_7770) -> bad
+Selecting 0
+Termination warning: v_7772 <> v_7773 && attacker2_ec_point_p1(v_7772,v_7771) && attacker2_ec_point_p1(v_7773,v_7771) -> bad
+Selecting 0
+Termination warning: v_7776 <> v_7777 && attacker2_coins_p1(v_7775,v_7776) && attacker2_coins_p1(v_7775,v_7777) -> bad
+Selecting 0
+Termination warning: v_7779 <> v_7780 && attacker2_coins_p1(v_7779,v_7778) && attacker2_coins_p1(v_7780,v_7778) -> bad
+Selecting 0
+Termination warning: v_7783 <> v_7784 && attacker2_channel_p1(v_7782,v_7783) && attacker2_channel_p1(v_7782,v_7784) -> bad
+Selecting 0
+Termination warning: v_7786 <> v_7787 && attacker2_channel_p1(v_7786,v_7785) && attacker2_channel_p1(v_7787,v_7785) -> bad
+Selecting 0
+Termination warning: v_7790 <> v_7791 && attacker2_bool_p1(v_7789,v_7790) && attacker2_bool_p1(v_7789,v_7791) -> bad
+Selecting 0
+Termination warning: v_7793 <> v_7794 && attacker2_bool_p1(v_7793,v_7792) && attacker2_bool_p1(v_7794,v_7792) -> bad
+Selecting 0
+Termination warning: v_7797 <> v_7798 && attacker2_bitstring_p1(v_7796,v_7797) && attacker2_bitstring_p1(v_7796,v_7798) -> bad
+Selecting 0
+Termination warning: v_7800 <> v_7801 && attacker2_bitstring_p1(v_7800,v_7799) && attacker2_bitstring_p1(v_7801,v_7799) -> bad
+Selecting 0
+Completing...
+200 rules inserted. The rule base contains 200 rules. 698 rules in the queue.
+400 rules inserted. The rule base contains 400 rules. 507 rules in the queue.
+Termination warning: v_7727 <> v_7728 && attacker2_tag_p1(v_7726,v_7727) && attacker2_tag_p1(v_7726,v_7728) -> bad
+Selecting 0
+Termination warning: v_7730 <> v_7731 && attacker2_tag_p1(v_7730,v_7729) && attacker2_tag_p1(v_7731,v_7729) -> bad
+Selecting 0
+Termination warning: v_7734 <> v_7735 && attacker2_ring_signature_p1(v_7733,v_7734) && attacker2_ring_signature_p1(v_7733,v_7735) -> bad
+Selecting 0
+Termination warning: v_7737 <> v_7738 && attacker2_ring_signature_p1(v_7737,v_7736) && attacker2_ring_signature_p1(v_7738,v_7736) -> bad
+Selecting 0
+Termination warning: v_7741 <> v_7742 && attacker2_identity_p1(v_7740,v_7741) && attacker2_identity_p1(v_7740,v_7742) -> bad
+Selecting 0
+Termination warning: v_7744 <> v_7745 && attacker2_identity_p1(v_7744,v_7743) && attacker2_identity_p1(v_7745,v_7743) -> bad
+Selecting 0
+Termination warning: v_7748 <> v_7749 && attacker2_eddsa_signature_p1(v_7747,v_7748) && attacker2_eddsa_signature_p1(v_7747,v_7749) -> bad
+Selecting 0
+Termination warning: v_7751 <> v_7752 && attacker2_eddsa_signature_p1(v_7751,v_7750) && attacker2_eddsa_signature_p1(v_7752,v_7750) -> bad
+Selecting 0
+Termination warning: v_7755 <> v_7756 && attacker2_eddsa_private_key_p1(v_7754,v_7755) && attacker2_eddsa_private_key_p1(v_7754,v_7756) -> bad
+Selecting 0
+Termination warning: v_7758 <> v_7759 && attacker2_eddsa_private_key_p1(v_7758,v_7757) && attacker2_eddsa_private_key_p1(v_7759,v_7757) -> bad
+Selecting 0
+Termination warning: v_7762 <> v_7763 && attacker2_ec_scalar_p1(v_7761,v_7762) && attacker2_ec_scalar_p1(v_7761,v_7763) -> bad
+Selecting 0
+Termination warning: v_7765 <> v_7766 && attacker2_ec_scalar_p1(v_7765,v_7764) && attacker2_ec_scalar_p1(v_7766,v_7764) -> bad
+Selecting 0
+Termination warning: v_7769 <> v_7770 && attacker2_ec_point_p1(v_7768,v_7769) && attacker2_ec_point_p1(v_7768,v_7770) -> bad
+Selecting 0
+Termination warning: v_7772 <> v_7773 && attacker2_ec_point_p1(v_7772,v_7771) && attacker2_ec_point_p1(v_7773,v_7771) -> bad
+Selecting 0
+Termination warning: v_7776 <> v_7777 && attacker2_coins_p1(v_7775,v_7776) && attacker2_coins_p1(v_7775,v_7777) -> bad
+Selecting 0
+Termination warning: v_7779 <> v_7780 && attacker2_coins_p1(v_7779,v_7778) && attacker2_coins_p1(v_7780,v_7778) -> bad
+Selecting 0
+Termination warning: v_7783 <> v_7784 && attacker2_channel_p1(v_7782,v_7783) && attacker2_channel_p1(v_7782,v_7784) -> bad
+Selecting 0
+Termination warning: v_7786 <> v_7787 && attacker2_channel_p1(v_7786,v_7785) && attacker2_channel_p1(v_7787,v_7785) -> bad
+Selecting 0
+Termination warning: v_7790 <> v_7791 && attacker2_bool_p1(v_7789,v_7790) && attacker2_bool_p1(v_7789,v_7791) -> bad
+Selecting 0
+Termination warning: v_7793 <> v_7794 && attacker2_bool_p1(v_7793,v_7792) && attacker2_bool_p1(v_7794,v_7792) -> bad
+Selecting 0
+Termination warning: v_7797 <> v_7798 && attacker2_bitstring_p1(v_7796,v_7797) && attacker2_bitstring_p1(v_7796,v_7798) -> bad
+Selecting 0
+Termination warning: v_7800 <> v_7801 && attacker2_bitstring_p1(v_7800,v_7799) && attacker2_bitstring_p1(v_7801,v_7799) -> bad
+Selecting 0
+600 rules inserted. The rule base contains 594 rules. 562 rules in the queue.
+800 rules inserted. The rule base contains 794 rules. 500 rules in the queue.
+Termination warning: v_220485 <> v_220486 && attacker2_tag(v_220484,v_220485) && attacker2_tag_p1(v_220484,v_220486) -> bad
+Selecting 0
+1000 rules inserted. The rule base contains 994 rules. 365 rules in the queue.
+Termination warning: v_220497 <> v_220499 && attacker2_tag(v_220497,v_220498) && attacker2_tag_p1(v_220499,v_220498) -> bad
+Selecting 0
+Termination warning: v_220511 <> v_220512 && attacker2_ring_signature(v_220510,v_220511) && attacker2_ring_signature_p1(v_220510,v_220512) -> bad
+Selecting 0
+Termination warning: v_220524 <> v_220526 && attacker2_ring_signature(v_220524,v_220525) && attacker2_ring_signature_p1(v_220526,v_220525) -> bad
+Selecting 0
+Termination warning: v_220539 <> v_220540 && attacker2_identity(v_220538,v_220539) && attacker2_identity_p1(v_220538,v_220540) -> bad
+Selecting 0
+Termination warning: v_220541 <> v_220543 && attacker2_identity(v_220541,v_220542) && attacker2_identity_p1(v_220543,v_220542) -> bad
+Selecting 0
+Termination warning: v_220545 <> v_220546 && attacker2_eddsa_signature(v_220544,v_220545) && attacker2_eddsa_signature_p1(v_220544,v_220546) -> bad
+Selecting 0
+Termination warning: v_220552 <> v_220554 && attacker2_eddsa_signature(v_220552,v_220553) && attacker2_eddsa_signature_p1(v_220554,v_220553) -> bad
+Selecting 0
+Termination warning: v_220561 <> v_220562 && attacker2_eddsa_private_key(v_220560,v_220561) && attacker2_eddsa_private_key_p1(v_220560,v_220562) -> bad
+Selecting 0
+Termination warning: v_220563 <> v_220565 && attacker2_eddsa_private_key(v_220563,v_220564) && attacker2_eddsa_private_key_p1(v_220565,v_220564) -> bad
+Selecting 0
+Termination warning: v_220567 <> v_220568 && attacker2_ec_scalar(v_220566,v_220567) && attacker2_ec_scalar_p1(v_220566,v_220568) -> bad
+Selecting 0
+Termination warning: v_220572 <> v_220574 && attacker2_ec_scalar(v_220572,v_220573) && attacker2_ec_scalar_p1(v_220574,v_220573) -> bad
+Selecting 0
+Termination warning: v_220579 <> v_220580 && attacker2_ec_point(v_220578,v_220579) && attacker2_ec_point_p1(v_220578,v_220580) -> bad
+Selecting 0
+Termination warning: v_220587 <> v_220589 && attacker2_ec_point(v_220587,v_220588) && attacker2_ec_point_p1(v_220589,v_220588) -> bad
+Selecting 0
+Termination warning: v_220597 <> v_220598 && attacker2_coins(v_220596,v_220597) && attacker2_coins_p1(v_220596,v_220598) -> bad
+Selecting 0
+Termination warning: v_220599 <> v_220601 && attacker2_coins(v_220599,v_220600) && attacker2_coins_p1(v_220601,v_220600) -> bad
+Selecting 0
+Termination warning: v_220603 <> v_220604 && attacker2_channel(v_220602,v_220603) && attacker2_channel_p1(v_220602,v_220604) -> bad
+Selecting 0
+Termination warning: v_220605 <> v_220607 && attacker2_channel(v_220605,v_220606) && attacker2_channel_p1(v_220607,v_220606) -> bad
+Selecting 0
+Termination warning: v_220609 <> v_220610 && attacker2_bool(v_220608,v_220609) && attacker2_bool_p1(v_220608,v_220610) -> bad
+Selecting 0
+Termination warning: v_220613 <> v_220615 && attacker2_bool(v_220613,v_220614) && attacker2_bool_p1(v_220615,v_220614) -> bad
+Selecting 0
+Termination warning: v_220619 <> v_220620 && attacker2_bitstring(v_220618,v_220619) && attacker2_bitstring_p1(v_220618,v_220620) -> bad
+Selecting 0
+Termination warning: v_220715 <> v_220717 && attacker2_bitstring(v_220715,v_220716) && attacker2_bitstring_p1(v_220717,v_220716) -> bad
+Selecting 0
+1200 rules inserted. The rule base contains 1064 rules. 427 rules in the queue.
+Termination warning: v_223760 <> v_223761 && attacker2_channel(v_223759,v_223760) && attacker2_channel(v_223759,v_223761) -> bad
+Selecting 0
+Termination warning: v_223762 <> v_223764 && attacker2_channel(v_223762,v_223763) && attacker2_channel(v_223764,v_223763) -> bad
+Selecting 0
+1400 rules inserted. The rule base contains 1214 rules. 394 rules in the queue.
+1600 rules inserted. The rule base contains 1366 rules. 439 rules in the queue.
+1800 rules inserted. The rule base contains 1561 rules. 598 rules in the queue.
+2000 rules inserted. The rule base contains 1736 rules. 602 rules in the queue.
+2200 rules inserted. The rule base contains 1918 rules. 600 rules in the queue.
+2400 rules inserted. The rule base contains 2118 rules. 542 rules in the queue.
+2600 rules inserted. The rule base contains 2290 rules. 474 rules in the queue.
+2800 rules inserted. The rule base contains 2488 rules. 413 rules in the queue.
+3000 rules inserted. The rule base contains 2688 rules. 327 rules in the queue.
+3200 rules inserted. The rule base contains 2881 rules. 264 rules in the queue.
+3400 rules inserted. The rule base contains 3022 rules. 260 rules in the queue.
+3600 rules inserted. The rule base contains 3189 rules. 251 rules in the queue.
+3800 rules inserted. The rule base contains 3318 rules. 419 rules in the queue.
+4000 rules inserted. The rule base contains 3501 rules. 606 rules in the queue.
+4200 rules inserted. The rule base contains 3684 rules. 657 rules in the queue.
+4400 rules inserted. The rule base contains 3884 rules. 739 rules in the queue.
+4600 rules inserted. The rule base contains 4075 rules. 766 rules in the queue.
+4800 rules inserted. The rule base contains 4266 rules. 791 rules in the queue.
+5000 rules inserted. The rule base contains 4466 rules. 864 rules in the queue.
+5200 rules inserted. The rule base contains 4666 rules. 871 rules in the queue.
+5400 rules inserted. The rule base contains 4866 rules. 928 rules in the queue.
+5600 rules inserted. The rule base contains 5066 rules. 942 rules in the queue.
+5800 rules inserted. The rule base contains 5266 rules. 907 rules in the queue.
+6000 rules inserted. The rule base contains 5466 rules. 987 rules in the queue.
+6200 rules inserted. The rule base contains 5666 rules. 1078 rules in the queue.
+6400 rules inserted. The rule base contains 5866 rules. 1062 rules in the queue.
+6600 rules inserted. The rule base contains 6066 rules. 1018 rules in the queue.
+6800 rules inserted. The rule base contains 6266 rules. 980 rules in the queue.
+7000 rules inserted. The rule base contains 6461 rules. 1027 rules in the queue.
+7200 rules inserted. The rule base contains 6656 rules. 1017 rules in the queue.
+7400 rules inserted. The rule base contains 6856 rules. 990 rules in the queue.
+7600 rules inserted. The rule base contains 7056 rules. 956 rules in the queue.
+7800 rules inserted. The rule base contains 7256 rules. 848 rules in the queue.
+8000 rules inserted. The rule base contains 7456 rules. 790 rules in the queue.
+8200 rules inserted. The rule base contains 7638 rules. 702 rules in the queue.
+8400 rules inserted. The rule base contains 7838 rules. 662 rules in the queue.
+8600 rules inserted. The rule base contains 8038 rules. 558 rules in the queue.
+8800 rules inserted. The rule base contains 8230 rules. 497 rules in the queue.
+9000 rules inserted. The rule base contains 8418 rules. 468 rules in the queue.
+9200 rules inserted. The rule base contains 8610 rules. 402 rules in the queue.
+9400 rules inserted. The rule base contains 8768 rules. 400 rules in the queue.
+9600 rules inserted. The rule base contains 8944 rules. 360 rules in the queue.
+9800 rules inserted. The rule base contains 9094 rules. 347 rules in the queue.
+10000 rules inserted. The rule base contains 9282 rules. 464 rules in the queue.
+10200 rules inserted. The rule base contains 9438 rules. 397 rules in the queue.
+10400 rules inserted. The rule base contains 9638 rules. 451 rules in the queue.
+10600 rules inserted. The rule base contains 9794 rules. 412 rules in the queue.
+10800 rules inserted. The rule base contains 9994 rules. 404 rules in the queue.
+11000 rules inserted. The rule base contains 10140 rules. 382 rules in the queue.
+11200 rules inserted. The rule base contains 10340 rules. 283 rules in the queue.
+11400 rules inserted. The rule base contains 10500 rules. 235 rules in the queue.
+11600 rules inserted. The rule base contains 10694 rules. 107 rules in the queue.
+ok, secrecy assumption verified: fact unreachable attacker2_ec_scalar_p1(y_65[!1 = v_207293],y_65[!1 = v_207293])
+ok, secrecy assumption verified: fact unreachable attacker2_ec_scalar(y_65[!1 = v_207290],y_65[!1 = v_207290])
+ok, secrecy assumption verified: fact unreachable attacker2_ec_scalar_p1(z[sigma_a = choice[v_207285,v_207286],!1 = v_207287],z[sigma_a = choice[v_207285,v_207286],!1 = v_207287])
+ok, secrecy assumption verified: fact unreachable attacker2_ec_scalar(z[sigma_a = choice[v_207278,v_207279],!1 = v_207280],z[sigma_a = choice[v_207278,v_207279],!1 = v_207280])
+RESULT Observational equivalence is true (bad not derivable).
