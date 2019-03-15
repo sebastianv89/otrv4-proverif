@@ -22,8 +22,6 @@
  * That way we don't explicitly model Bob, but instead provide the attacker
  * with all they need and more to execute Bob's half of the protocol.
  *
- * TODO: does online deniability imply offline deniability
- *
  * # Inaccuracies of the model
  *
  * Proverif is based on the pi-calculus and can only do so much to accurately
@@ -76,9 +74,6 @@ set ignoreTypes = false.
 
 (* Public communication channel *)
 channel c.
-
-(* Authenticated channel for fingerprint comparison *)
-free ac: channel [private].
 
 
 (* ECDH: key exchange *)
@@ -170,6 +165,11 @@ type identity.
 free id1, id2: identity.
 
 
+(* Fingerprint calculation *)
+letfun fingerprint(client_profile: eddsa_signature) =
+    kdf(usageFingerprint, eddsa_get_msg(client_profile)).
+
+
 (* Generate a new Client Profile *)
 letfun generate_cp() =
     new h: eddsa_private_key;
@@ -213,12 +213,13 @@ process
 
     (
         !(
-            (* This is either honest Alice or forger Bob *)
-            in(c, (=cp2, Y: ec_point));
+            (* Model either honest Alice or forger Bob *)
+            in(c, (cpb: eddsa_signature, Y: ec_point));
+            if fingerprint(cpb) = fingerprint(cp2) then
 
             new x: ec_scalar;
             let X = ec_mul(x, ec_base) in
-            let ta = (zero, cp2, cp1, Y, X, id2, id1) in
+            let ta = (zero, cpb, cp1, Y, X, id2, id1) in
             let k = kdf(usageSharedSecret, ec_point_as_bits(ec_mul(x, Y))) in
             let ssid = kdf(usageSSID, k) in out(c, ssid);
             (* Alice signs with her key, Bob uses his forger key *)
@@ -233,8 +234,7 @@ process
             if Z_mac = mac(kmac, ec_point_as_bits(Z)) then
 
             (* The done message lets the adversary distinguish successful
-             * protocol executions from failed ones.
-             *)
+             * protocol executions from failed ones. *)
             out(c, done)
         ) |
 
