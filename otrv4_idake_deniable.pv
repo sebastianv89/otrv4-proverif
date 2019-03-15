@@ -1,0 +1,258 @@
+(* Model of OTRv4
+ * Sebastian R. Verschoor
+ *
+ * Here we prove offline deniability for OTRv4 when running in interactive
+ * mode. That means that a communicating party is not able to provide
+ * convincing evidence that a conversation took part. Whatever
+ * transcript/evidence is given, the honest parties can always successful argue
+ * that the entire transcript was simulated by a third party (with access to
+ * only the public keys of the honest parties).
+ *
+ * In Proverif we model this by modelling the above simulator. We run the
+ * interactive handshake for the honest parties and for the simulator. If the
+ * adversary cannot distinguish between honest and simulated, then the protocol
+ * is offline deniable.
+ *
+ * # Inaccuracies of the model
+ *
+ * Proverif is based on the pi-calculus and can only do so much to accurately
+ * model the protocol and cryptographic primitives as specified (let alone
+ * implemented). In particular, Proverif assumes perfect cryptographic
+ * primitives and cannot handle associativity, but for a more complete
+ * discussion of the matter see the [Proverif manual][Proverif]. This is
+ * relevant for OTRv4 in at least the following ways:
+ * - Diffie-Hellman is only defined relative to the base element.
+ * - Hashes (also MAC and KDF) are essentialy random oracles.
+ *
+ * Besides the above unavoidable sources of incompleteness, there are also some
+ * diversions from the protocol as [currently specified][OTRv4]:
+ * - Each party is assumed to have just one signed prekey.
+ * - protocol negotiation/modes: it is assumed that Alice and Bob have agreed
+ *   on this beforehand. Downgrade attacks, for example, are not covered.
+ * - nested KDF calls are avoided
+ * - I modelled [this proposal](https://github.com/otrv4/otrv4/issues/205)
+ *   (since I have only modelled the handshake, that means that I simply did
+ *   not include additional ephemeral keys)
+ *   FIXME: this should be done differently
+ * - Fingerprint comparison must be modelled at a particular point in time,
+ *   here done just after the regular protocol completes. In reality, it
+ *   can be done at any time (preferably beforehand). The alternative (SMP) has
+ *   not been modelled.
+ *
+ * Some things may look strange but they should not affect the results:
+ * - public data (Client-/Prekey-Profiles) are outputted only once
+ * - new values are generated as early as possible, this helps Proverif
+ *   resolve the model quicker. In general the order of operations does not
+ *   matter, only the order of sent/received messages.
+ * - prekey management is more complicated then is modelled here. However, from
+ *   the protocol perspective all the server is doing is caching the messages.
+ * - signatures are implemented with message recovery directly from the signature.
+ *   This should improve Proverif performance and does not affect the model since
+ *   signatures are always computed over publicly known values.
+ * - SSID values can be compared, but this is not required to be confidential,
+ *   this is modelled by simply outputting the value (but actual comparison is
+ *   considered out of scope).
+ *
+ * # References
+ * 
+ * [DAKES]: https://www.petsymposium.org/2018/files/papers/issue1/paper12-2018-1-source.pdf
+ * [Proverif]: http://prosecco.gforge.inria.fr/personal/bblanche/proverif/manual.pdf
+ * [OTRv4]: https://github.com/otrv4/otrv4/blob/master/otrv4.md
+ *)
+
+
+(* The specification makes sure types cannot be mixed *)
+set ignoreTypes = false.
+
+
+(* Public communication channel *)
+channel c.
+
+
+(* ECDH: key exchange *)
+
+type ec_point.
+type ec_scalar.
+
+const ec_base: ec_point [data].
+fun ec_point_as_bits(ec_point): bitstring [data, typeConverter].
+ 
+fun ec_mul(ec_scalar, ec_point): ec_point.
+equation forall x: ec_scalar, y: ec_scalar;
+    ec_mul(x, ec_mul(y, ec_base)) = ec_mul(y, ec_mul(x, ec_base)).
+
+(* EdDSA: digital signatures *)
+type eddsa_private_key.
+type eddsa_signature.
+
+fun eddsa_scalar(eddsa_private_key): ec_scalar.
+letfun eddsa_public_key(x: eddsa_private_key) = ec_mul(eddsa_scalar(x), ec_base).
+
+fun eddsa_sign(eddsa_private_key, bitstring): eddsa_signature.
+reduc forall k: eddsa_private_key, m: bitstring;
+    eddsa_get_msg(eddsa_sign(k, m)) = m.
+reduc forall k: eddsa_private_key, m: bitstring;
+    eddsa_verify(eddsa_sign(k, m), ec_mul(eddsa_scalar(k), ec_base)) = m.
+
+(* Elliptic curve ring signatures (three public keys) *)
+
+type ring_signature.
+
+type coins.
+fun internal_ring_sign(ec_scalar, ec_point, ec_point, bitstring, coins): ring_signature.
+
+letfun ring_sign(k: ec_scalar, a: ec_point, b: ec_point, m: bitstring) =
+    new r: coins; internal_ring_sign(k, a, b, m, r).
+
+reduc forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+    ring_get_msg(internal_ring_sign(k, a, b, m, r)) = m.
+reduc
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), ec_mul(k, ec_base), a, b) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), ec_mul(k, ec_base), b, a) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), a, ec_mul(k, ec_base), b) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), a, b, ec_mul(k, ec_base)) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), b, ec_mul(k, ec_base), a) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), b, a, ec_mul(k, ec_base)) = m.
+
+
+(* KDF *)
+
+type tag.
+
+fun kdf(tag, bitstring): bitstring.
+
+
+(* Domain seperating tags *)
+
+(* usageID variables, superfluous ones are commented out *)
+const usageFingerprint: tag [data].
+(* const usageThirdBraceKey: tag [data]. *)
+(* const usageBraceKey: tag [data]. *)
+const usageSharedSecret: tag [data].
+const usageSSID: tag [data].
+(* const usageAuthRBobClientProfile: tag [data]. *)
+(* const usageAuthRAliceClientProfile: tag [data]. *)
+(* const usageAuthRPhi: tag [data]. *)
+(* const usageAuthIBobClientProfile: tag [data]. *)
+(* const usageAuthIAliceClientProfile: tag [data]. *)
+(* const usageAuthIPhi: tag [data]. *)
+(* const usageFirstRootKey: tag [data]. *)
+const usageTmpKey: tag [data].
+const usageAuthMACKey: tag [data].
+(* const usageNonIntAuthBobClientProfile: tag [data]. *)
+(* const usageNonIntAuthAliceClientProfile: tag [data]. *)
+(* const usageNonIntAuthPhi: tag [data]. *)
+const usageAuthMAC: tag [data].
+(* const usageECDHFirstEphemeral: tag [data]. *)
+(* const usageDHFirstEphemeral: tag [data]. *)
+(* const usageRootKey: tag [data]. *)
+(* const usageChainKey: tag [data]. *)
+(* const usageNextChainKey: tag [data]. *)
+(* const usageMessageKey: tag [data]. *)
+const usageMACKey: tag [data].
+(* const usageExtraSymmKey: tag [data]. *)
+(* const usageDataMessageSections: tag [data]. *)
+const usageAuthenticator: tag [data].
+const usageSMPSecret: tag [data].
+(* const usageAuth: tag [data]. *)
+
+(* Other constants *)
+const zero: tag [data].
+const one: tag [data].
+const fp_idake_alice: tag [data].
+const fp_idake_bob: tag [data].
+const fp_nidake_alice: tag [data].
+const fp_nidake_bob: tag [data].
+
+
+(* Identity of the honest parties (e.g. bare JID) *)
+
+type identity.
+free id1, id2: identity.
+
+
+(* Fingerprint calculation *)
+letfun fingerprint(client_profile: eddsa_signature) =
+    kdf(usageFingerprint, eddsa_get_msg(client_profile)).
+
+
+(* Generate a new Client Profile *)
+letfun generate_cp() =
+    new h: eddsa_private_key;
+    new f: ec_scalar;
+    let H = eddsa_public_key(h) in
+    let F = ec_mul(f, ec_base) in
+    let cp = eddsa_sign(h, (H, F)) in
+    (cp, h, f).
+
+
+(* The main process. The idea is that we run an interactive handshake
+ * between Alice and Bob, or a simulated conversation by a third party.
+ * If the adversary cannot distinguish between them, then the handshake
+ * is *offline deniable*.
+ *)
+
+process
+    (* Generate the honest parties *)
+    new h1: eddsa_private_key;
+    new f1: ec_scalar;
+    let H1 = eddsa_public_key(h1) in
+    let F1 = ec_mul(f1, ec_base) in
+    let cp1 = eddsa_sign(h1, (H1, F1)) in
+
+    new h2: eddsa_private_key;
+    new f2: ec_scalar;
+    let H2 = eddsa_public_key(h2) in
+    let F2 = ec_mul(f2, ec_base) in
+    let cp2 = eddsa_sign(h2, (H2, F2)) in
+
+    out(c, (cp1, cp2));
+
+    (
+        (!(
+            (* Bob *)
+            new y: ec_scalar;
+            let Y = ec_mul(y, ec_base) in
+            out(c, Y);
+
+            (* Alice *)
+            new x: ec_scalar;
+            let X = ec_mul(x, ec_base) in
+            let ta = (zero, cp2, cp1, Y, X, id2, id1) in
+            let ka = kdf(usageSharedSecret, ec_point_as_bits(ec_mul(x, Y))) in
+            let ssid_a = kdf(usageSSID, ka) in out(c, ssid_a);
+            let priv_a = choice[eddsa_scalar(h1), y] in
+            let pub_a = choice[Y, H1] in
+            let sigma_a = ring_sign(priv_a, F2, pub_a, ta) in
+            out(c, sigma_a);
+
+            (* Bob *)
+            let tb = (one, cp2, cp1, Y, X, id2, id1) in
+            let kb = kdf(usageSharedSecret, ec_point_as_bits(ec_mul(y, X))) in
+            let ssid_b = kdf(usageSSID, kb) in out(c, ssid_b);
+            let priv_b = choice[eddsa_scalar(h2), x] in
+            let pub_b = choice[X, H2] in
+            let sigma_b = ring_sign(priv_b, F1, pub_b, tb) in
+            new z: ec_scalar;
+            let Z = ec_mul(z, ec_base) in
+            let kmac = kdf(usageMACKey, kb) in
+            let Z_mac = kdf(usageAuthenticator, (kmac, ec_point_as_bits(Z))) in
+            out(c, (sigma_b, Z, Z_mac));
+
+            (* Alice (has no further output) *)
+
+            (* Output the session key (as computed by both sides) *)
+            out(c, (ka, kb))
+        )) |
+
+        (* Reveal all secret values *)
+        (phase 1; out(c, (h1, f1, h2, f2)))
+
+    )
+
