@@ -1,0 +1,235 @@
+(* Model of OTRv4
+ * Sebastian R. Verschoor
+ *
+ * This model aims to prove online deniability for Alice in the setting of the
+ * non-interactive handshake.
+ *
+ * *Online deniability* [means][DAKES] that
+ * > participants [...] cannot provide proof of participation to third parties
+ * > without making themselves vulnerable to KCI attacks, even if they perform
+ * > artibtrary protocols with these third parties during the exchange".
+ * Key compromise impersonation (KCI) implies that the long-term keys of an
+ * honest or coerced party have been compromised. Here we aim to prove a
+ * slightly weaker statement: an attacker without access to Bob's long-term
+ * keys cannot provide evidence that Alice participated in a conversation.
+ * This is mainly a technical distinction, because it does not *prove* that
+ * the adversary can perform KCI with Bob's long-term key, but that part can
+ * be easily seen and does not require formal modelling.
+ * 
+ * We cannot model arbitrary protocols, but we can model something pretty
+ * close: Bob will sign arbitrary messages with his long-term private key and
+ * Bob will do arbitrary DH computations with his long-term private key.
+ * That way we don't explicitly model Bob, but instead provide the attacker
+ * with all they need and more to execute Bob's half of the protocol.
+ *
+ * TODO: does online deniability imply offline deniability?
+ *
+ * # Inaccuracies of the model
+ *
+ * Proverif is based on the pi-calculus and can only do so much to accurately
+ * model the protocol and cryptographic primitives as specified (let alone
+ * implemented). In particular, Proverif assumes perfect cryptographic
+ * primitives and cannot handle associativity, but for a more complete
+ * discussion of the matter see the [Proverif manual][Proverif]. This is
+ * relevant for OTRv4 in at least the following ways:
+ * - Diffie-Hellman is only defined relative to the base element.
+ * - Hashes (also MAC and KDF) are essentialy random oracles.
+ *
+ * Besides the above unavoidable sources of incompleteness, there are also some
+ * diversions from the protocol as [currently specified][OTRv4]:
+ * - protocol negotiation/modes: it is assumed that Alice and Bob have agreed
+ *   on this beforehand. Downgrade attacks, for example, are not covered.
+ * - nested KDF calls are avoided
+ * - I modelled [this proposal](https://github.com/otrv4/otrv4/issues/205)
+ *   (since I have only modelled the handshake, that means that I simply did
+ *   not include additional ephemeral keys)
+ *   FIXME: this should be done differently
+ * - Fingerprint comparison must be modelled at a particular point in time,
+ *   here done just after the regular protocol completes. In reality, it
+ *   can be done at any time (preferably beforehand). The alternative (SMP) has
+ *   not been modelled.
+ *   FIXME: this probably must be done earlier
+ *
+ * Some things may look strange but they should not affect the results:
+ * - public data (Client-/Prekey-Profiles) are outputted only once
+ * - new values are generated as early as possible, this helps Proverif
+ *   resolve the model quicker. In general the order of operations does not
+ *   matter, only the order of sent/received messages.
+ * - signatures are implemented with message recovery directly from the signature.
+ *   This should improve Proverif performance and does not affect the model since
+ *   signatures are always computed over publicly known values.
+ * - SSID values can be compared, but this is not required to be confidential,
+ *   this is modelled by simply outputting the value (but actual comparison is
+ *   considered out of scope).
+ *
+ * # References
+ * 
+ * [DAKES]: https://www.petsymposium.org/2018/files/papers/issue1/paper12-2018-1-source.pdf
+ * [Proverif]: http://prosecco.gforge.inria.fr/personal/bblanche/proverif/manual.pdf
+ * [OTRv4]: https://github.com/otrv4/otrv4/blob/master/otrv4.md
+ *)
+
+
+(* The specification makes sure types cannot be mixed *)
+set ignoreTypes = false.
+
+
+(* Public communication channel *)
+channel c.
+
+
+(* ECDH: key exchange *)
+
+type ec_point.
+type ec_scalar.
+
+const ec_base: ec_point [data].
+fun ec_point_as_bits(ec_point): bitstring [data, typeConverter].
+ 
+fun ec_mul(ec_scalar, ec_point): ec_point.
+equation forall x: ec_scalar, y: ec_scalar;
+    ec_mul(x, ec_mul(y, ec_base)) = ec_mul(y, ec_mul(x, ec_base)).
+
+(* EdDSA: digital signatures *)
+type eddsa_private_key.
+type eddsa_signature.
+
+fun eddsa_scalar(eddsa_private_key): ec_scalar.
+letfun eddsa_public_key(x: eddsa_private_key) = ec_mul(eddsa_scalar(x), ec_base).
+
+fun eddsa_sign(eddsa_private_key, bitstring): eddsa_signature.
+reduc forall k: eddsa_private_key, m: bitstring;
+    eddsa_get_msg(eddsa_sign(k, m)) = m.
+reduc forall k: eddsa_private_key, m: bitstring;
+    eddsa_verify(eddsa_sign(k, m), ec_mul(eddsa_scalar(k), ec_base)) = m.
+
+(* Elliptic curve ring signatures (three public keys) *)
+
+type ring_signature.
+type coins.
+fun internal_ring_sign(ec_scalar, ec_point, ec_point, bitstring, coins): ring_signature.
+
+letfun ring_sign(k: ec_scalar, a: ec_point, b: ec_point, m: bitstring) =
+    new r: coins; internal_ring_sign(k, a, b, m, r).
+
+reduc forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+    ring_get_msg(internal_ring_sign(k, a, b, m, r)) = m.
+reduc
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), ec_mul(k, ec_base), a, b) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), ec_mul(k, ec_base), b, a) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), a, ec_mul(k, ec_base), b) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), a, b, ec_mul(k, ec_base)) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), b, ec_mul(k, ec_base), a) = m;
+    forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring, r: coins;
+        ring_verify(internal_ring_sign(k, a, b, m, r), b, a, ec_mul(k, ec_base)) = m.
+
+
+(* KDF *)
+
+type tag.
+
+fun kdf(tag, bitstring): bitstring.
+
+
+(* Domain seperating tags *)
+
+(* usageID variables, superfluous ones are commented out *)
+const usageFingerprint: tag [data].
+const usageSharedSecret: tag [data].
+const usageSSID: tag [data].
+const usageTmpKey: tag [data].
+const usageAuthMACKey: tag [data].
+const usageAuthMAC: tag [data].
+const usageMACKey: tag [data].
+const usageAuthenticator: tag [data].
+
+
+(* Identity of the honest parties (e.g. bare JID) *)
+
+type identity.
+free id1, id2: identity.
+
+
+(* Proverif secrecy assumptions (hints for the solver) *)
+not attacker(new x).
+not attacker(new z).
+not attacker(new r).
+
+
+(* The main process. The idea is that the adversary talks with either Alice or
+ * Bob acting as Alice. If the adversary cannot distinguish honest Alice from
+ * forger Bob in any way, then the protocol is *online deniable*.
+ * 
+ * Bob will also help out the adversary by signing arbitrary messages and computing
+ * arbitrary dh computations with his private keys.
+ *
+ * See section 4.3.2 of the Proverif manual for more info.
+ *)
+
+process
+    (* Generate the two parties *)
+    new h1: eddsa_private_key;
+    new f1: ec_scalar;
+    let H1 = eddsa_public_key(h1) in
+    let F1 = ec_mul(f1, ec_base) in
+    let cp1 = eddsa_sign(h1, (H1, F1)) in
+
+    new h2: eddsa_private_key;
+    new f2: ec_scalar;
+    let H2 = eddsa_public_key(h2) in
+    let F2 = ec_mul(f2, ec_base) in
+    let cp2 = eddsa_sign(h2, (H2, F2)) in
+
+    (* Note there is no need to generate the Prekey Profile, since Bob will sign arbitrary messages.*)
+
+    out(c, (cp1, cp2));
+
+    (
+        !(
+            (* This is either honest Alice or forger Bob *)
+            in(c, (=cp2, pkp: eddsa_signature, Y: ec_point));
+            let ec_point_as_bits(D) = eddsa_verify(pkp, H2) in
+            new x: ec_scalar;
+            let X = ec_mul(x, ec_base) in
+            let tmpk = kdf(usageTmpKey, (ec_mul(x, Y), ec_mul(x, D), ec_mul(x, H2))) in
+            let t = (cp2, cp1, Y, X, D, id2, id1) in
+            let k = kdf(usageSharedSecret, tmpk) in
+            let ssid = kdf(usageSSID, k) in out(c, ssid);
+            let priv = choice[eddsa_scalar(h1), f2] in
+            let pub = choice[F2, H1] in
+            let sigma = ring_sign(priv, pub, Y, t) in
+            let xzdh_mac_key = kdf(usageAuthMACKey, tmpk) in
+            let xzdh_mac = kdf(usageAuthMAC, (xzdh_mac_key, t)) in
+            let msg_mac_key = kdf(usageMACKey, k) in
+            new z: ec_scalar;
+            let Z = ec_mul(z, ec_base) in
+            let Z_mac = kdf(usageAuthenticator, (msg_mac_key, ec_point_as_bits(Z))) in
+            out(c, (sigma, xzdh_mac, Z, Z_mac))
+        ) |
+
+        (* Bob will help out the attacker except for revealing h2 and f2 *)
+        (!(
+            in(c, m: bitstring);
+            out(c, eddsa_sign(h2, m))
+        )) |
+        (!(
+            in(c, p: ec_point);
+            out(c, ec_mul(eddsa_scalar(h2), p));
+            out(c, ec_mul(f2, p))
+        )) |
+        (!(
+            in(c, (a: ec_point, b: ec_point, m: bitstring, r: coins));
+            out(c, internal_ring_sign(eddsa_scalar(h2), a, b, m, r));
+            out(c, internal_ring_sign(f2, a, b, m, r))
+        )) |
+
+        (* Can the adversary distinguish if the keys leak afterwards? *)
+        (phase 1; out(c, (h1, h2, f1, f2)))
+        
+    )
+

@@ -11,9 +11,11 @@
  * directives (use `CPP -P` for example to set these). Here I list the flags
  * and what they do.
  *
- * - BRACE: turn the `brace_key` mechanism on and operate under the
- *   assumption that Elliptic Curves are broken. Warning: this makes
- *   modelchecking very slow.
+ * - DIFFIEHELLMAN: turn the `brace_key` mechanism on and operate under the
+ * assumption that Elliptic Curves are broken. Warning: this makes
+ * modelchecking very slow.
+ * - RANDRINGSIG: randomized ring signatures. Warning: this makes modelchecking
+ * very slow.
  *
  * # Inaccuracies of the model
  *
@@ -23,6 +25,9 @@
  * primitives and cannot handle associativity, but for a more complete
  * discussion of the matter see the [Proverif manual][Proverif]. This is
  * relevant for OTRv4 in at least the following ways:
+ * - There is no primitive for non-authenticated encryption. The OTR
+ * mechanism of deriving the MAC key from the encryption key and then
+ * publishing the MAC key after message retrieval cannot be modelled.
  * - Diffie-Hellman is only defined relative to the base element.
  * - Hashes (also MAC and KDF) are essentialy random oracles.
  *
@@ -30,109 +35,64 @@
  * diversions from the protocol as [currently specified][OTRv4]:
  * - Each party is assumed to have just one signed prekey.
  * - protocol negotiation/modes: it is assumed that Alice and Bob have agreed
- *   on this beforehand. Downgrade attacks, for example, are not covered.
+ * on this beforehand. Downgrade attacks, for example, are not covered.
  * - nested KDF calls are avoided
- * - I modelled [this proposal](https://github.com/otrv4/otrv4/issues/205)
- *   (since I have only modelled the handshake, that means that I simply did
- *   not include additional ephemeral keys)
- *   FIXME: this should be done differently
+ * - I modelled [this proposal](https:
+ * (since I have only modelled the handshake, that means that I simply did
+ * not include additional ephemeral keys)
  * - Fingerprint comparison must be modelled at a particular point in time,
- *   here done just after the regular protocol completes. In reality, it
- *   can be done at any time (preferably beforehand). The alternative (SMP) has
- *   not been modelled.
+ * here done just after the regular protocol completes. In reality, it
+ * can be done at any time (preferably beforehand).
  *
- * Some things may look strange but they should not affect the results:
+ * Some things may look strange but they are actually fine:
  * - public data (Client-/Prekey-Profiles) are outputted only once
  * - new values are generated as early as possible, this helps Proverif
- *   resolve the model quicker. In general the order of operations does not
- *   matter, only the order of sent/received messages.
+ * resolve the model quicker. In general the order of operations does not
+ * matter, only the order of sent/received messages.
  * - prekey management is more complicated then is modelled here. However, from
- *   the protocol perspective all the server is doing is caching the messages.
+ * the protocol persepective all the server is doing is caching the messages.
  * - signatures are implemented with message recovery directly from the signature.
- *   This should improve Proverif performance and does not affect the model since
- *   signatures are always computed over publicly known values.
+ * This should improve Proverif performance and does not affect the model since
+ * signatures are always computed over publicly known values.
  * - SSID values can be compared, but this is not required to be confidential,
- *   this is modelled by simply outputting the value (but actual comparison is
- *   considered out of scope).
+ * this is modelled by simply outputting the value (but actual comparison is
+ * considered out of scope).
  *
  * # References
  *
- * [Proverif]: http://prosecco.gforge.inria.fr/personal/bblanche/proverif/manual.pdf
- * [OTRv4]: https://github.com/otrv4/otrv4/blob/master/otrv4.md
+ * [Proverif]: http:
+ * [OTRv4]: https:
  *)
-
-
+(* TODO: SMP vs out-of-band fingerprinting *)
 (* The specification makes sure types cannot be mixed *)
 set ignoreTypes = false.
-
-
 (* Public communication channel *)
 channel c.
-
 (* Authenticated channel for fingerprint comparison *)
 free ac: channel [private].
-
-
-#ifdef BRACE
-
-(* Diffie-Hellman: key exchange *)
-
-type dh_group_element.
-type dh_exponent.
-
-const dh_generator: dh_group_element [data].
-
-fun dh(dh_group_element, dh_exponent): dh_group_element.
-equation forall x: dh_exponent, y: dh_exponent;
-    dh(dh(dh_generator, x), y) = dh(dh(dh_generator, y), x).
-
-(* When we model Diffie-Hellman, we care about the secrecy in case ECC is
- * broken at some point in the future. To ensure that ephemeral scalar values
- * are being revealed even if some subprocess cannot terminate, every scalar is
- * published on a private channel. A parallel process will collect all values
- * and publish them in phase 1. Note that non-ephemeral values will be
- * published directly in phase 1 as is common for modelling forward secrecy in
- * Proverif.
- *)
-free ec_leak: channel [private].
-
-#endif
-
-
 (* ECDH: key exchange *)
-
 type ec_point.
 type ec_scalar.
-
 const ec_base: ec_point [data].
 fun ec_point_as_bits(ec_point): bitstring [data, typeConverter].
-
-fun ec_mul(ec_scalar, ec_point): ec_point.
+fun ec_mul(ec_scalar, ec_point): ec_point. (* Elliptic Curve Diffie-Hellman *)
 equation forall x: ec_scalar, y: ec_scalar;
     ec_mul(x, ec_mul(y, ec_base)) = ec_mul(y, ec_mul(x, ec_base)).
-
 (* EdDSA: digital signatures *)
 type eddsa_private_key.
 type eddsa_signature.
-
 fun eddsa_scalar(eddsa_private_key): ec_scalar.
 letfun eddsa_public_key(x: eddsa_private_key) = ec_mul(eddsa_scalar(x), ec_base).
-
 fun eddsa_sign(eddsa_private_key, bitstring): eddsa_signature.
 reduc forall k: eddsa_private_key, m: bitstring;
     eddsa_get_msg(eddsa_sign(k, m)) = m.
 reduc forall k: eddsa_private_key, m: bitstring;
     eddsa_verify(eddsa_sign(k, m), ec_mul(eddsa_scalar(k), ec_base)) = m.
-
 (* Elliptic curve ring signatures (three public keys) *)
-
 type ring_signature.
-
 fun ring_sign(ec_scalar, ec_point, ec_point, bitstring): ring_signature.
-
 reduc forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring;
     ring_get_msg(ring_sign(k, a, b, m)) = m.
-
 reduc
     forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring;
         ring_verify(ring_sign(k, a, b, m), ec_mul(k, ec_base), a, b) = m;
@@ -146,17 +106,10 @@ reduc
         ring_verify(ring_sign(k, a, b, m), b, ec_mul(k, ec_base), a) = m;
     forall k: ec_scalar, a: ec_point, b: ec_point, m: bitstring;
         ring_verify(ring_sign(k, a, b, m), b, a, ec_mul(k, ec_base)) = m.
-
-
 (* KDF *)
-
 type tag.
-
 fun kdf(tag, bitstring): bitstring.
-
-
 (* Domain seperating tags *)
-
 (* usageID variables, superfluous ones are commented out *)
 const usageFingerprint: tag [data].
 (* const usageThirdBraceKey: tag [data]. *)
@@ -188,7 +141,6 @@ const usageMACKey: tag [data].
 const usageAuthenticator: tag [data].
 const usageSMPSecret: tag [data].
 (* const usageAuth: tag [data]. *)
-
 (* Other constants *)
 const zero: tag [data].
 const one: tag [data].
@@ -196,28 +148,19 @@ const fp_idake_alice: tag [data].
 const fp_idake_bob: tag [data].
 const fp_nidake_alice: tag [data].
 const fp_nidake_bob: tag [data].
-
-
 (* MAC *)
-
 letfun mac(key: bitstring, message: bitstring, handshake: bool) =
     if handshake then
         kdf(usageAuthMAC, (key, message))
     else
         kdf(usageAuthenticator, (key, message)).
-
-
 (* Identity of the honest parties (e.g. bare JID) *)
-
 type identity.
 free id1, id2: identity.
-
-
 (* Fingerprint calculation *)
 letfun fingerprint(client_profile: eddsa_signature) =
     kdf(usageFingerprint, eddsa_get_msg(client_profile)).
-
-
+(* TODO: SMP with weaksecret *)
 (* Generate a new Client Profile *)
 letfun generate_cp() =
     new h: eddsa_private_key;
@@ -226,40 +169,20 @@ letfun generate_cp() =
     let F = ec_mul(f, ec_base) in
     let cp = eddsa_sign(h, (H, F)) in
     (cp, h, f).
-
 (* Generate a new Prekey Profile *)
 letfun generate_pkp(h: eddsa_private_key) =
     new d: ec_scalar;
     let D = ec_mul(d, ec_base) in
     let pkp = eddsa_sign(h, ec_point_as_bits(D)) in
     (pkp, d).
-
-
 (* Proverif secrecy assumptions (hints for the solver) *)
-#ifdef BRACE
-not attacker(new a_i).
-not attacker(new a_ni).
-not attacker(new b_i).
-not attacker(new b_ni).
-not attacker(new x_i) phase 0.
-not attacker(new x_ni) phase 0.
-not attacker(new y_i) phase 0.
-not attacker(new y_ni) phase 0.
-not attacker(new z_i) phase 0.
-not attacker(new z_ni) phase 0.
-#else
 not attacker(new x_i).
 not attacker(new x_ni).
 not attacker(new y_i).
 not attacker(new y_ni).
 not attacker(new z_i).
 not attacker(new z_ni).
-#endif
-
-
 (* Queries *)
-
-
 (* Correctness queries (can honest participants complete the protocol?):
  * we want "RESULT not attacker(correct) is false."
 *)
@@ -271,151 +194,95 @@ query attacker(idake_alice_correct);
       attacker(idake_bob_correct);
       attacker(nidake_alice_correct);
       attacker(nidake_bob_correct).
-
-
 (* Secrecy queries *)
-
 query secret k_ia;
       secret k_ib;
       secret k_nia;
       secret k_nib.
-
-
+(*
+fun enc(bitstring, bitstring): bitstring.
+reduc forall k: bitstring, m: bitstring; dec(k, enc(k, m)) = m.
+free k_ia, k_ib, k_nia, k_nib: bitstring [private].
+query attacker(k_ia);
+      attacker(k_ib);
+      attacker(k_nia);
+      attacker(k_nib).
+*)
 (* Authentication queries *)
-
 event accept_idake_alice(identity, identity, bitstring, bitstring).
 event term_idake_bob(identity, identity, bitstring, bitstring).
 event accept_idake_bob(identity, identity, bitstring, bitstring, ec_point).
 event term_idake_alice(identity, identity, bitstring, bitstring, ec_point).
-
-event accept_nidake_alice(identity, identity, bitstring, bitstring, ec_point).
-event term_nidake_bob(identity, identity, bitstring, bitstring, ec_point).
-
-#ifndef BRACE
-(* with the flag BRACE we only care about (forward) secrecy *)
-
 query idx: identity, ssid: bitstring, k: bitstring;
     inj-event(term_idake_bob(id1, idx, ssid, k))
     ==> inj-event(accept_idake_alice(id1, idx, ssid, k)).
 query idx: identity, ssid: bitstring, k: bitstring, Z: ec_point;
     inj-event(term_idake_alice(idx, id2, ssid, k, Z))
     ==> inj-event(accept_idake_bob(idx, id2, ssid, k, Z)).
-
+(* Note: No authentication for Bob in non-interactive mode *)
+event accept_nidake_alice(identity, identity, bitstring, bitstring, ec_point).
+event term_nidake_bob(identity, identity, bitstring, bitstring, ec_point).
 query idx: identity, ssid: bitstring, k: bitstring, Z: ec_point;
     inj-event(term_nidake_bob(id1, idx, ssid, k, Z))
     ==> inj-event(accept_nidake_alice(id1, idx, ssid, k, Z)).
-(* Note: No authentication for Bob in non-interactive mode *)
-
-#endif
-
-
+(* TODO: Deniability queries *)
 (* Processes *)
-
-
 (* Interactive DAKE: Alice *)
 let idake_alice(first: bitstring, second: bitstring) =
     (* Generate new values ASAP *)
     new x_i: ec_scalar;
-#ifdef BRACE
-    out(ec_leak, x_i);
-    new a_i: dh_exponent;
-#endif
-
     (* Let the attacker start either honest party as Alice *)
     in(c, (id_alice: identity, id_bob: identity));
     if id_alice = id1 || id_alice = id2 then
     let alice = if id_alice = id1 then first else second in
     let (cpa: eddsa_signature, ha: eddsa_private_key, fa: ec_scalar) = alice in
     let (Ha: ec_point, Fa: ec_point) = eddsa_get_msg(cpa) in
-
     (* Real start of the role *)
-#ifdef BRACE
-    in(c, (cpb: eddsa_signature, Y: ec_point, B: dh_group_element));
-#else
     in(c, (cpb: eddsa_signature, Y: ec_point));
-#endif
     let (Hb: ec_point, Fb: ec_point) = eddsa_get_msg(cpb) in
     let (=Hb, =Fb) = eddsa_verify(cpb, Hb) in
     let X = ec_mul(x_i, ec_base) in
-#ifdef BRACE
-    let A = dh(dh_generator, a_i) in
-    let ta = (zero, cpb, cpa, Y, X , B, A , id_bob, id_alice) in
-    let k = kdf(usageSharedSecret, (ec_mul(x_i, Y), dh(B, a_i))) in
-#else
     let ta = (zero, cpb, cpa, Y, X, id_bob, id_alice) in
     let k = kdf(usageSharedSecret, ec_point_as_bits(ec_mul(x_i, Y))) in
-#endif
     let ssid = kdf(usageSSID, k) in out(c, ssid);
     let sigma_a = ring_sign(eddsa_scalar(ha), Fb, Y, ta) in
     event accept_idake_alice(id_alice, id_bob, ssid, k);
     out(c, sigma_a);
-
     in(c, (sigma_b: ring_signature, Z: ec_point, Z_mac: bitstring));
     let kmac = kdf(usageMACKey, k) in
-#ifdef BRACE
-    let (=one, =cpb, =cpa, =Y, =X, =B, =A, =id_bob, =id_alice) = ring_verify(sigma_b, Hb, Fa, X) in
-#else
     let (=one, =cpb, =cpa, =Y, =X, =id_bob, =id_alice) = ring_verify(sigma_b, Hb, Fa, X) in
-#endif
     if Z_mac = mac(kmac, ec_point_as_bits(Z), false) then
     event term_idake_alice(id_alice, id_bob, ssid, k, Z);
-
     (* Compare fingerprints *)
     out(ac, (fp_idake_alice, fingerprint(cpa)));
     in(ac, (=fp_idake_bob, =fingerprint(cpb)));
-
     (* Security for honest participants *)
     if id_bob = id1 || id_bob = id2 then
     out(c, idake_alice_correct);
     let k_ia = k in
     (* out(c, enc(k, k_ia)); *)
-
     0.
-
 (* Interactive DAKE: Bob *)
 let idake_bob(first: bitstring, second: bitstring) =
     (* Generate new values ASAP *)
     new y_i: ec_scalar;
     new z_i: ec_scalar;
-#ifdef BRACE
-    out(ec_leak, y_i);
-    out(ec_leak, z_i);
-    new b_i: dh_exponent;
-#endif
-
     (* Let the attacker start either honest party as Bob *)
     in(c, (id_alice: identity, id_bob: identity));
     if id_bob = id1 || id_bob = id2 then
     let bob = if id_bob = id1 then first else second in
     let (cpb: eddsa_signature, hb: eddsa_private_key, fb: ec_scalar) = bob in
-    let (Hb: ec_point, Fb: ec_point) =  eddsa_get_msg(cpb) in
-
+    let (Hb: ec_point, Fb: ec_point) = eddsa_get_msg(cpb) in
     (* Real start of the role *)
     let Y = ec_mul(y_i, ec_base) in
-#ifdef BRACE
-    let B = dh(dh_generator, b_i) in
-    out(c, (Y, B));
-#else
     out(c, Y);
-#endif
-
     in(c, sigma_a: ring_signature);
-#ifdef BRACE
-    let (=zero, =cpb, cpa: eddsa_signature, =Y, X: ec_point, =B, A: dh_group_element, =id_bob, =id_alice) = ring_get_msg(sigma_a) in
-#else
     let (=zero, =cpb, cpa: eddsa_signature, =Y, X: ec_point, =id_bob, =id_alice) = ring_get_msg(sigma_a) in
-#endif
     let (Ha: ec_point, Fa: ec_point) = eddsa_get_msg(cpa) in
     let (=Ha, =Fa) = eddsa_verify(cpa, Ha) in
-#ifdef BRACE
-    let (=zero, =cpb, =cpa, =Y, =X, =B, =A, =id_bob, =id_alice) = ring_verify(sigma_a, Ha, Fb, Y) in
-    let tb = (one, cpb, cpa, Y, X, B, A, id_bob, id_alice) in
-    let k = kdf(usageSharedSecret, (ec_mul(y_i, X), dh(A, b_i))) in
-#else
     let (=zero, =cpb, =cpa, =Y, =X, =id_bob, =id_alice) = ring_verify(sigma_a, Ha, Fb, Y) in
     let tb = (one, cpb, cpa, Y, X, id_bob, id_alice) in
     let k = kdf(usageSharedSecret, ec_point_as_bits(ec_mul(y_i, X))) in
-#endif
     let ssid = kdf(usageSSID, k) in out(c, ssid);
     event term_idake_bob(id_alice, id_bob, ssid, k);
     let sigma_b = ring_sign(eddsa_scalar(hb), Fa, X, tb) in
@@ -424,55 +291,33 @@ let idake_bob(first: bitstring, second: bitstring) =
     let Z_mac = mac(kmac, ec_point_as_bits(Z), false) in
     event accept_idake_bob(id_alice, id_bob, ssid, k, Z);
     out(c, (sigma_b, Z, Z_mac));
-
     (* Compare fingerprints *)
     in(ac, (=fp_idake_alice, =fingerprint(cpa)));
     out(ac, (fp_idake_bob, fingerprint(cpb)));
-
     (* Security for the honest participants *)
     if id_alice = id1 || id_alice = id2 then
     out(c, idake_bob_correct);
     let k_ib = k in
     (* out(c, enc(k, k_ib)); *)
-
     0.
-
-
 (* Non-Interactive DAKE: Alice *)
 let nidake_alice(first: bitstring, second: bitstring) =
     (* Generate new values ASAP *)
     new x_ni: ec_scalar;
     new z_ni: ec_scalar;
-#ifdef BRACE
-    out(ec_leak, x_ni);
-    out(ec_leak, z_ni);
-    new a_ni: dh_exponent;
-#endif
-
     (* Let the attacker start the honest party as Alice *)
     in(c, (id_alice: identity, id_bob: identity));
     if id_alice = id1 || id_alice = id2 then
     let alice = if id_alice = id1 then first else second in
     let (cpa: eddsa_signature, ha: eddsa_private_key, fa: ec_scalar) = alice in
-
     (* Real start of the role *)
-#ifdef BRACE
-    in(c, (cpb: eddsa_signature, pkp: eddsa_signature, Y: ec_point, B: dh_group_element));
-#else
     in(c, (cpb: eddsa_signature, pkp: eddsa_signature, Y: ec_point));
-#endif
     let (Hb: ec_point, Fb: ec_point) = eddsa_get_msg(cpb) in
     let (=Hb, =Fb) = eddsa_verify(cpb, Hb) in
     let ec_point_as_bits(D) = eddsa_verify(pkp, Hb) in
     let X = ec_mul(x_ni, ec_base) in
-#ifdef BRACE
-    let A = dh(dh_generator, a_ni) in
-    let tmpk = kdf(usageTmpKey, (ec_mul(x_ni, Y), ec_mul(x_ni, D), ec_mul(x_ni, Hb), dh(B, a_ni))) in
-    let t = (cpb, cpa, Y, X, B, A, D, id_bob, id_alice) in
-#else
     let tmpk = kdf(usageTmpKey, (ec_mul(x_ni, Y), ec_mul(x_ni, D), ec_mul(x_ni, Hb))) in
     let t = (cpb, cpa, Y, X, D, id_bob, id_alice) in
-#endif
     let k = kdf(usageSharedSecret, tmpk) in
     let ssid = kdf(usageSSID, k) in out(c, ssid);
     let sigma = ring_sign(eddsa_scalar(ha), Fb, Y, t) in
@@ -483,63 +328,37 @@ let nidake_alice(first: bitstring, second: bitstring) =
     let Z_mac = mac(msg_mac_key, ec_point_as_bits(Z), false) in
     event accept_nidake_alice(id_alice, id_bob, ssid, k, Z);
     out(c, (sigma, xzdh_mac, Z, Z_mac));
-
     (* Compare fingerprints *)
     out(ac, (fp_nidake_alice, fingerprint(cpa)));
     in(ac, (=fp_nidake_bob, =fingerprint(cpb)));
-
     (* Security for the honest participants *)
     if id_bob = id1 || id_bob = id2 then
     out(c, nidake_alice_correct);
     let k_nia = k in
     (* out(c, enc(k, k_nia)); *)
-
     0.
-
 (* Non-Interactive DAKE: Bob *)
 let nidake_bob(first: bitstring, second: bitstring) =
     (* Generate new values ASAP *)
     new y_ni: ec_scalar;
-#ifdef BRACE
-    out(ec_leak, y_ni);
-    new b_ni: dh_exponent;
-#endif
-
     (* Let the attacker start an honest party as Bob *)
     in(c, (id_alice: identity, id_bob: identity));
     if id_bob = id1 || id_bob = id2 then
     let bob = if id_bob = id1 then first else second in
     let (cpb: eddsa_signature, hb: eddsa_private_key, fb: ec_scalar, d: ec_scalar) = bob in
     let (Hb: ec_point, Fb: ec_point) = eddsa_get_msg(cpb) in
-
     (* Real start of the role *)
-
     (* Prekey part, cached by the Prekey server *)
     let Y = ec_mul(y_ni, ec_base) in
-#ifdef BRACE
-    let B = dh(dh_generator, b_ni) in
-    out(c, (Y, B));
-#else
     out(c, Y);
-#endif
-
     (* Remainder of the role *)
     in(c, (sigma: ring_signature, xzdh_mac: bitstring, Z: ec_point, Z_mac: bitstring));
     let t = ring_get_msg(sigma) in
-#ifdef BRACE
-    let (=cpb, cpa: eddsa_signature, =Y, X: ec_point, =B, A: dh_group_element, =ec_mul(d, ec_base), =id_bob, =id_alice) = t in
-#else
     let (=cpb, cpa: eddsa_signature, =Y, X: ec_point, =ec_mul(d, ec_base), =id_bob, =id_alice) = t in
-#endif
     let (Ha: ec_point, Fa: ec_point) = eddsa_get_msg(cpa) in
     let (=Ha, =Fa) = eddsa_verify(cpa, Ha) in
-#ifdef BRACE
-    let (=cpb, =cpa, =Y, =X, =B, =A, =ec_mul(d, ec_base), =id_bob, =id_alice) = ring_verify(sigma, Ha, Fb, Y) in
-    let tmpk = kdf(usageTmpKey, (ec_mul(y_ni, X), ec_mul(d, X), ec_mul(eddsa_scalar(hb), X), dh(A, b_ni))) in
-#else
     let (=cpb, =cpa, =Y, =X, =ec_mul(d, ec_base), =id_bob, =id_alice) = ring_verify(sigma, Ha, Fb, Y) in
     let tmpk = kdf(usageTmpKey, (ec_mul(y_ni, X), ec_mul(d, X), ec_mul(eddsa_scalar(hb), X))) in
-#endif
     let xzdh_mac_key = kdf(usageAuthMACKey, tmpk) in
     if xzdh_mac = mac(xzdh_mac_key, t, true) then
     let k = kdf(usageSharedSecret, tmpk) in
@@ -547,34 +366,28 @@ let nidake_bob(first: bitstring, second: bitstring) =
     let msg_mac_key = kdf(usageMACKey, k) in
     if Z_mac = mac(msg_mac_key, ec_point_as_bits(Z), false) then
     event term_nidake_bob(id_alice, id_bob, ssid, k, Z);
-
     (* Compare fingerprints *)
     in(ac, (=fp_nidake_alice, =fingerprint(cpa)));
     out(ac, (fp_nidake_bob, fingerprint(cpb)));
-
     (* Security for honest participants *)
     if id_alice = id1 || id_alice = id2 then
     out(c, nidake_bob_correct);
     let k_nib = k in
     (* out(c, enc(k, k_nib)); *)
-
     0.
-
-
 (* The main process. The idea is to generate two honest parties and allow both
  * of them to participate in arbitrary many protocol executions in any of the
  * four roles:
- *     1. Alice, interactive
- *     2. Bob, interactive
- *     3. Alice, non-interactive
- *     4. Bob, non-interactive
+ * 1. Alice, interactive
+ * 2. Bob, interactive
+ * 3. Alice, non-interactive
+ * 4. Bob, non-interactive
  * The adversary can then execute and complete arbitrary many protocol runs
  * with either party in any role, however we only expect security in case it
  * was an interaction between the two honest parties.
  *
  * This strategy stems from example 5.3 in the Proverif manual.
  *)
-
 process
     (* Generate the honest parties *)
     let (cp1: eddsa_signature, h1: eddsa_private_key, f1: ec_scalar) = generate_cp() in
@@ -582,19 +395,13 @@ process
     let (cp2: eddsa_signature, h2: eddsa_private_key, f2: ec_scalar) = generate_cp() in
     let (pkp2: eddsa_signature, d2: ec_scalar) = generate_pkp(h2) in
     out(c, (cp1, cp2, pkp1, pkp2));
-
     (
       (!idake_alice((cp1, h1, f1), (cp2, h2, f2))) |
       (!idake_bob((cp1, h1, f1), (cp2, h2, f2))) |
       (!nidake_alice((cp1, h1, f1), (cp2, h2, f2))) |
       (!nidake_bob((cp1, h1, f1, d1), (cp2, h2, f2, d2))) |
-
       (* Make ac non-confidential *)
       (!in(ac, x: bitstring); out(c, x)) |
-
       (* Reveal all secret values *)
-      (phase 1; out(c, (h1, f1, d1, h2, f2, d2)))
-#ifdef BRACE
-      | (!(in(ec_leak, x: ec_scalar); phase 1; out(c, x)))
-#endif
+      (phase 1; out(c, (h1, f1, d1, h2, f2)))
     )

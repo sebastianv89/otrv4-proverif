@@ -1,0 +1,1275 @@
+Linear part:
+ec_mul(x,ec_mul(y,ec_base)) = ec_mul(y,ec_mul(x,ec_base))
+Completing equations...
+Completed equations:
+ec_mul(x,ec_mul(y,ec_base)) = ec_mul(y,ec_mul(x,ec_base))
+Convergent part:
+Completing equations...
+Completed equations:
+Biprocess:
+{1}new h1: eddsa_private_key;
+{2}new f1: ec_scalar;
+{3}let H1: ec_point = ec_mul(eddsa_scalar(h1),ec_base) in
+{4}let F1: ec_point = ec_mul(f1,ec_base) in
+{5}let cp1: eddsa_signature = eddsa_sign(h1,(H1,F1)) in
+{6}new h2: eddsa_private_key;
+{7}new f2: ec_scalar;
+{8}let H2: ec_point = ec_mul(eddsa_scalar(h2),ec_base) in
+{9}let F2: ec_point = ec_mul(f2,ec_base) in
+{10}let cp2: eddsa_signature = eddsa_sign(h2,(H2,F2)) in
+{11}out(c, (cp1,cp2));
+(
+    {12}!
+    {13}in(c, (=cp2,pkp: eddsa_signature,Y: ec_point));
+    {14}let ec_point_as_bits(D: ec_point) = eddsa_verify(pkp,H2) in
+    {15}new x_65: ec_scalar;
+    {16}let X: ec_point = ec_mul(x_65,ec_base) in
+    {17}let tmpk: bitstring = kdf(usageTmpKey,(ec_mul(x_65,Y),ec_mul(x_65,D),ec_mul(x_65,H2))) in
+    {18}let t: bitstring = (cp2,cp1,Y,X,D,id2,id1) in
+    {19}let k_66: bitstring = kdf(usageSharedSecret,tmpk) in
+    {20}let ssid: bitstring = kdf(usageSSID,k_66) in
+    {21}out(c, ssid);
+    {22}let priv: ec_scalar = choice[eddsa_scalar(h1),f2] in
+    {23}let pub: ec_point = choice[F2,H1] in
+    {24}new r_67: coins;
+    {25}let sigma: ring_signature = internal_ring_sign(priv,pub,Y,t,r_67) in
+    {26}let xzdh_mac_key: bitstring = kdf(usageAuthMACKey,tmpk) in
+    {27}let xzdh_mac: bitstring = kdf(usageAuthMAC,(xzdh_mac_key,t)) in
+    {28}let msg_mac_key: bitstring = kdf(usageMACKey,k_66) in
+    {29}new z: ec_scalar;
+    {30}let Z: ec_point = ec_mul(z,ec_base) in
+    {31}let Z_mac: bitstring = kdf(usageAuthenticator,(msg_mac_key,ec_point_as_bits(Z))) in
+    {32}out(c, (sigma,xzdh_mac,Z,Z_mac))
+) | (
+    {33}!
+    {34}in(c, m_68: bitstring);
+    {35}out(c, eddsa_sign(h2,m_68))
+) | (
+    {36}!
+    {37}in(c, p: ec_point);
+    {38}out(c, ec_mul(eddsa_scalar(h2),p));
+    {39}out(c, ec_mul(f2,p))
+) | (
+    {40}!
+    {41}in(c, (a_69: ec_point,b_70: ec_point,m_71: bitstring,r_72: coins));
+    {42}out(c, internal_ring_sign(eddsa_scalar(h2),a_69,b_70,m_71,r_72));
+    {43}out(c, internal_ring_sign(f2,a_69,b_70,m_71,r_72))
+) | (
+    {44}phase 1;
+    {45}out(c, (h1,h2,f1,f2))
+)
+
+-- Observational equivalence
+Termination warning: v_8460 <> v_8461 && attacker2_tag_p1(v_8459,v_8460) && attacker2_tag_p1(v_8459,v_8461) -> bad
+Selecting 0
+Termination warning: v_8463 <> v_8464 && attacker2_tag_p1(v_8463,v_8462) && attacker2_tag_p1(v_8464,v_8462) -> bad
+Selecting 0
+Termination warning: v_8467 <> v_8468 && attacker2_ring_signature_p1(v_8466,v_8467) && attacker2_ring_signature_p1(v_8466,v_8468) -> bad
+Selecting 0
+Termination warning: v_8470 <> v_8471 && attacker2_ring_signature_p1(v_8470,v_8469) && attacker2_ring_signature_p1(v_8471,v_8469) -> bad
+Selecting 0
+Termination warning: v_8474 <> v_8475 && attacker2_identity_p1(v_8473,v_8474) && attacker2_identity_p1(v_8473,v_8475) -> bad
+Selecting 0
+Termination warning: v_8477 <> v_8478 && attacker2_identity_p1(v_8477,v_8476) && attacker2_identity_p1(v_8478,v_8476) -> bad
+Selecting 0
+Termination warning: v_8481 <> v_8482 && attacker2_eddsa_signature_p1(v_8480,v_8481) && attacker2_eddsa_signature_p1(v_8480,v_8482) -> bad
+Selecting 0
+Termination warning: v_8484 <> v_8485 && attacker2_eddsa_signature_p1(v_8484,v_8483) && attacker2_eddsa_signature_p1(v_8485,v_8483) -> bad
+Selecting 0
+Termination warning: v_8488 <> v_8489 && attacker2_eddsa_private_key_p1(v_8487,v_8488) && attacker2_eddsa_private_key_p1(v_8487,v_8489) -> bad
+Selecting 0
+Termination warning: v_8491 <> v_8492 && attacker2_eddsa_private_key_p1(v_8491,v_8490) && attacker2_eddsa_private_key_p1(v_8492,v_8490) -> bad
+Selecting 0
+Termination warning: v_8495 <> v_8496 && attacker2_ec_scalar_p1(v_8494,v_8495) && attacker2_ec_scalar_p1(v_8494,v_8496) -> bad
+Selecting 0
+Termination warning: v_8498 <> v_8499 && attacker2_ec_scalar_p1(v_8498,v_8497) && attacker2_ec_scalar_p1(v_8499,v_8497) -> bad
+Selecting 0
+Termination warning: v_8502 <> v_8503 && attacker2_ec_point_p1(v_8501,v_8502) && attacker2_ec_point_p1(v_8501,v_8503) -> bad
+Selecting 0
+Termination warning: v_8505 <> v_8506 && attacker2_ec_point_p1(v_8505,v_8504) && attacker2_ec_point_p1(v_8506,v_8504) -> bad
+Selecting 0
+Termination warning: v_8509 <> v_8510 && attacker2_coins_p1(v_8508,v_8509) && attacker2_coins_p1(v_8508,v_8510) -> bad
+Selecting 0
+Termination warning: v_8512 <> v_8513 && attacker2_coins_p1(v_8512,v_8511) && attacker2_coins_p1(v_8513,v_8511) -> bad
+Selecting 0
+Termination warning: v_8516 <> v_8517 && attacker2_channel_p1(v_8515,v_8516) && attacker2_channel_p1(v_8515,v_8517) -> bad
+Selecting 0
+Termination warning: v_8519 <> v_8520 && attacker2_channel_p1(v_8519,v_8518) && attacker2_channel_p1(v_8520,v_8518) -> bad
+Selecting 0
+Termination warning: v_8523 <> v_8524 && attacker2_bool_p1(v_8522,v_8523) && attacker2_bool_p1(v_8522,v_8524) -> bad
+Selecting 0
+Termination warning: v_8526 <> v_8527 && attacker2_bool_p1(v_8526,v_8525) && attacker2_bool_p1(v_8527,v_8525) -> bad
+Selecting 0
+Termination warning: v_8530 <> v_8531 && attacker2_bitstring_p1(v_8529,v_8530) && attacker2_bitstring_p1(v_8529,v_8531) -> bad
+Selecting 0
+Termination warning: v_8533 <> v_8534 && attacker2_bitstring_p1(v_8533,v_8532) && attacker2_bitstring_p1(v_8534,v_8532) -> bad
+Selecting 0
+Completing...
+200 rules inserted. The rule base contains 200 rules. 561 rules in the queue.
+400 rules inserted. The rule base contains 400 rules. 370 rules in the queue.
+Termination warning: v_8460 <> v_8461 && attacker2_tag_p1(v_8459,v_8460) && attacker2_tag_p1(v_8459,v_8461) -> bad
+Selecting 0
+Termination warning: v_8463 <> v_8464 && attacker2_tag_p1(v_8463,v_8462) && attacker2_tag_p1(v_8464,v_8462) -> bad
+Selecting 0
+Termination warning: v_8467 <> v_8468 && attacker2_ring_signature_p1(v_8466,v_8467) && attacker2_ring_signature_p1(v_8466,v_8468) -> bad
+Selecting 0
+Termination warning: v_8470 <> v_8471 && attacker2_ring_signature_p1(v_8470,v_8469) && attacker2_ring_signature_p1(v_8471,v_8469) -> bad
+Selecting 0
+Termination warning: v_8474 <> v_8475 && attacker2_identity_p1(v_8473,v_8474) && attacker2_identity_p1(v_8473,v_8475) -> bad
+Selecting 0
+Termination warning: v_8477 <> v_8478 && attacker2_identity_p1(v_8477,v_8476) && attacker2_identity_p1(v_8478,v_8476) -> bad
+Selecting 0
+Termination warning: v_8481 <> v_8482 && attacker2_eddsa_signature_p1(v_8480,v_8481) && attacker2_eddsa_signature_p1(v_8480,v_8482) -> bad
+Selecting 0
+Termination warning: v_8484 <> v_8485 && attacker2_eddsa_signature_p1(v_8484,v_8483) && attacker2_eddsa_signature_p1(v_8485,v_8483) -> bad
+Selecting 0
+Termination warning: v_8488 <> v_8489 && attacker2_eddsa_private_key_p1(v_8487,v_8488) && attacker2_eddsa_private_key_p1(v_8487,v_8489) -> bad
+Selecting 0
+Termination warning: v_8491 <> v_8492 && attacker2_eddsa_private_key_p1(v_8491,v_8490) && attacker2_eddsa_private_key_p1(v_8492,v_8490) -> bad
+Selecting 0
+Termination warning: v_8495 <> v_8496 && attacker2_ec_scalar_p1(v_8494,v_8495) && attacker2_ec_scalar_p1(v_8494,v_8496) -> bad
+Selecting 0
+Termination warning: v_8498 <> v_8499 && attacker2_ec_scalar_p1(v_8498,v_8497) && attacker2_ec_scalar_p1(v_8499,v_8497) -> bad
+Selecting 0
+Termination warning: v_8502 <> v_8503 && attacker2_ec_point_p1(v_8501,v_8502) && attacker2_ec_point_p1(v_8501,v_8503) -> bad
+Selecting 0
+Termination warning: v_8505 <> v_8506 && attacker2_ec_point_p1(v_8505,v_8504) && attacker2_ec_point_p1(v_8506,v_8504) -> bad
+Selecting 0
+Termination warning: v_8509 <> v_8510 && attacker2_coins_p1(v_8508,v_8509) && attacker2_coins_p1(v_8508,v_8510) -> bad
+Selecting 0
+Termination warning: v_8512 <> v_8513 && attacker2_coins_p1(v_8512,v_8511) && attacker2_coins_p1(v_8513,v_8511) -> bad
+Selecting 0
+Termination warning: v_8516 <> v_8517 && attacker2_channel_p1(v_8515,v_8516) && attacker2_channel_p1(v_8515,v_8517) -> bad
+Selecting 0
+Termination warning: v_8519 <> v_8520 && attacker2_channel_p1(v_8519,v_8518) && attacker2_channel_p1(v_8520,v_8518) -> bad
+Selecting 0
+Termination warning: v_8523 <> v_8524 && attacker2_bool_p1(v_8522,v_8523) && attacker2_bool_p1(v_8522,v_8524) -> bad
+Selecting 0
+Termination warning: v_8526 <> v_8527 && attacker2_bool_p1(v_8526,v_8525) && attacker2_bool_p1(v_8527,v_8525) -> bad
+Selecting 0
+Termination warning: v_8530 <> v_8531 && attacker2_bitstring_p1(v_8529,v_8530) && attacker2_bitstring_p1(v_8529,v_8531) -> bad
+Selecting 0
+Termination warning: v_8533 <> v_8534 && attacker2_bitstring_p1(v_8533,v_8532) && attacker2_bitstring_p1(v_8534,v_8532) -> bad
+Selecting 0
+600 rules inserted. The rule base contains 594 rules. 422 rules in the queue.
+800 rules inserted. The rule base contains 596 rules. 448 rules in the queue.
+Termination warning: v_148397 <> v_148398 && attacker2_tag(v_148396,v_148397) && attacker2_tag_p1(v_148396,v_148398) -> bad
+Selecting 0
+Termination warning: v_148407 <> v_148409 && attacker2_tag(v_148407,v_148408) && attacker2_tag_p1(v_148409,v_148408) -> bad
+Selecting 0
+Termination warning: v_148419 <> v_148420 && attacker2_ring_signature(v_148418,v_148419) && attacker2_ring_signature_p1(v_148418,v_148420) -> bad
+Selecting 0
+Termination warning: v_148432 <> v_148434 && attacker2_ring_signature(v_148432,v_148433) && attacker2_ring_signature_p1(v_148434,v_148433) -> bad
+Selecting 0
+Termination warning: v_148447 <> v_148448 && attacker2_identity(v_148446,v_148447) && attacker2_identity_p1(v_148446,v_148448) -> bad
+Selecting 0
+Termination warning: v_148449 <> v_148451 && attacker2_identity(v_148449,v_148450) && attacker2_identity_p1(v_148451,v_148450) -> bad
+Selecting 0
+Termination warning: v_148453 <> v_148454 && attacker2_eddsa_signature(v_148452,v_148453) && attacker2_eddsa_signature_p1(v_148452,v_148454) -> bad
+Selecting 0
+Termination warning: v_148460 <> v_148462 && attacker2_eddsa_signature(v_148460,v_148461) && attacker2_eddsa_signature_p1(v_148462,v_148461) -> bad
+Selecting 0
+Termination warning: v_148469 <> v_148470 && attacker2_eddsa_private_key(v_148468,v_148469) && attacker2_eddsa_private_key_p1(v_148468,v_148470) -> bad
+Selecting 0
+Termination warning: v_148471 <> v_148473 && attacker2_eddsa_private_key(v_148471,v_148472) && attacker2_eddsa_private_key_p1(v_148473,v_148472) -> bad
+Selecting 0
+Termination warning: v_148475 <> v_148476 && attacker2_ec_scalar(v_148474,v_148475) && attacker2_ec_scalar_p1(v_148474,v_148476) -> bad
+Selecting 0
+Termination warning: v_148480 <> v_148482 && attacker2_ec_scalar(v_148480,v_148481) && attacker2_ec_scalar_p1(v_148482,v_148481) -> bad
+Selecting 0
+Termination warning: v_148487 <> v_148488 && attacker2_ec_point(v_148486,v_148487) && attacker2_ec_point_p1(v_148486,v_148488) -> bad
+Selecting 0
+Termination warning: v_148495 <> v_148497 && attacker2_ec_point(v_148495,v_148496) && attacker2_ec_point_p1(v_148497,v_148496) -> bad
+Selecting 0
+Termination warning: v_148505 <> v_148506 && attacker2_coins(v_148504,v_148505) && attacker2_coins_p1(v_148504,v_148506) -> bad
+Selecting 0
+Termination warning: v_148507 <> v_148509 && attacker2_coins(v_148507,v_148508) && attacker2_coins_p1(v_148509,v_148508) -> bad
+Selecting 0
+Termination warning: v_148511 <> v_148512 && attacker2_channel(v_148510,v_148511) && attacker2_channel_p1(v_148510,v_148512) -> bad
+Selecting 0
+Termination warning: v_148513 <> v_148515 && attacker2_channel(v_148513,v_148514) && attacker2_channel_p1(v_148515,v_148514) -> bad
+Selecting 0
+Termination warning: v_148517 <> v_148518 && attacker2_bool(v_148516,v_148517) && attacker2_bool_p1(v_148516,v_148518) -> bad
+Selecting 0
+Termination warning: v_148521 <> v_148523 && attacker2_bool(v_148521,v_148522) && attacker2_bool_p1(v_148523,v_148522) -> bad
+Selecting 0
+Termination warning: v_148527 <> v_148528 && attacker2_bitstring(v_148526,v_148527) && attacker2_bitstring_p1(v_148526,v_148528) -> bad
+Selecting 0
+Termination warning: v_148638 <> v_148640 && attacker2_bitstring(v_148638,v_148639) && attacker2_bitstring_p1(v_148640,v_148639) -> bad
+Selecting 0
+1000 rules inserted. The rule base contains 782 rules. 475 rules in the queue.
+1200 rules inserted. The rule base contains 980 rules. 491 rules in the queue.
+Termination warning: v_155811 <> v_155812 && attacker2_channel(v_155810,v_155811) && attacker2_channel(v_155810,v_155812) -> bad
+Selecting 0
+Termination warning: v_155813 <> v_155815 && attacker2_channel(v_155813,v_155814) && attacker2_channel(v_155815,v_155814) -> bad
+Selecting 0
+1400 rules inserted. The rule base contains 1172 rules. 484 rules in the queue.
+1600 rules inserted. The rule base contains 1372 rules. 1202 rules in the queue.
+1800 rules inserted. The rule base contains 1571 rules. 1801 rules in the queue.
+2000 rules inserted. The rule base contains 1766 rules. 1860 rules in the queue.
+2200 rules inserted. The rule base contains 1966 rules. 2732 rules in the queue.
+2400 rules inserted. The rule base contains 2166 rules. 4012 rules in the queue.
+2600 rules inserted. The rule base contains 2366 rules. 5098 rules in the queue.
+2800 rules inserted. The rule base contains 2566 rules. 6440 rules in the queue.
+3000 rules inserted. The rule base contains 2766 rules. 7282 rules in the queue.
+3200 rules inserted. The rule base contains 2966 rules. 7710 rules in the queue.
+3400 rules inserted. The rule base contains 3166 rules. 8860 rules in the queue.
+3600 rules inserted. The rule base contains 3366 rules. 9773 rules in the queue.
+3800 rules inserted. The rule base contains 3566 rules. 9752 rules in the queue.
+4000 rules inserted. The rule base contains 3766 rules. 10186 rules in the queue.
+4200 rules inserted. The rule base contains 3966 rules. 11186 rules in the queue.
+4400 rules inserted. The rule base contains 4166 rules. 11908 rules in the queue.
+4600 rules inserted. The rule base contains 4366 rules. 12483 rules in the queue.
+4800 rules inserted. The rule base contains 4566 rules. 13058 rules in the queue.
+5000 rules inserted. The rule base contains 4766 rules. 13633 rules in the queue.
+5200 rules inserted. The rule base contains 4966 rules. 14208 rules in the queue.
+5400 rules inserted. The rule base contains 5166 rules. 14334 rules in the queue.
+5600 rules inserted. The rule base contains 5366 rules. 14443 rules in the queue.
+5800 rules inserted. The rule base contains 5566 rules. 15018 rules in the queue.
+6000 rules inserted. The rule base contains 5766 rules. 15593 rules in the queue.
+6200 rules inserted. The rule base contains 5966 rules. 15998 rules in the queue.
+6400 rules inserted. The rule base contains 6166 rules. 16232 rules in the queue.
+6600 rules inserted. The rule base contains 6366 rules. 16553 rules in the queue.
+6800 rules inserted. The rule base contains 6566 rules. 16788 rules in the queue.
+7000 rules inserted. The rule base contains 6766 rules. 17078 rules in the queue.
+7200 rules inserted. The rule base contains 6966 rules. 17343 rules in the queue.
+7400 rules inserted. The rule base contains 7166 rules. 17602 rules in the queue.
+7600 rules inserted. The rule base contains 7366 rules. 17696 rules in the queue.
+7800 rules inserted. The rule base contains 7566 rules. 18019 rules in the queue.
+8000 rules inserted. The rule base contains 7766 rules. 18594 rules in the queue.
+8200 rules inserted. The rule base contains 7966 rules. 19169 rules in the queue.
+8400 rules inserted. The rule base contains 8166 rules. 19446 rules in the queue.
+8600 rules inserted. The rule base contains 8366 rules. 19724 rules in the queue.
+8800 rules inserted. The rule base contains 8566 rules. 19972 rules in the queue.
+9000 rules inserted. The rule base contains 8766 rules. 20279 rules in the queue.
+9200 rules inserted. The rule base contains 8966 rules. 20514 rules in the queue.
+9400 rules inserted. The rule base contains 9166 rules. 20822 rules in the queue.
+9600 rules inserted. The rule base contains 9366 rules. 20992 rules in the queue.
+9800 rules inserted. The rule base contains 9566 rules. 21096 rules in the queue.
+10000 rules inserted. The rule base contains 9766 rules. 21172 rules in the queue.
+10200 rules inserted. The rule base contains 9966 rules. 21238 rules in the queue.
+10400 rules inserted. The rule base contains 10166 rules. 21342 rules in the queue.
+10600 rules inserted. The rule base contains 10366 rules. 21446 rules in the queue.
+10800 rules inserted. The rule base contains 10566 rules. 21548 rules in the queue.
+11000 rules inserted. The rule base contains 10766 rules. 21594 rules in the queue.
+11200 rules inserted. The rule base contains 10966 rules. 21802 rules in the queue.
+11400 rules inserted. The rule base contains 11166 rules. 22377 rules in the queue.
+11600 rules inserted. The rule base contains 11366 rules. 22769 rules in the queue.
+11800 rules inserted. The rule base contains 11566 rules. 23326 rules in the queue.
+12000 rules inserted. The rule base contains 11766 rules. 23736 rules in the queue.
+12200 rules inserted. The rule base contains 11966 rules. 24232 rules in the queue.
+12400 rules inserted. The rule base contains 12166 rules. 24832 rules in the queue.
+12600 rules inserted. The rule base contains 12366 rules. 25475 rules in the queue.
+12800 rules inserted. The rule base contains 12566 rules. 26067 rules in the queue.
+13000 rules inserted. The rule base contains 12766 rules. 27067 rules in the queue.
+13200 rules inserted. The rule base contains 12966 rules. 28328 rules in the queue.
+13400 rules inserted. The rule base contains 13161 rules. 28320 rules in the queue.
+13600 rules inserted. The rule base contains 13361 rules. 28197 rules in the queue.
+13800 rules inserted. The rule base contains 13561 rules. 28256 rules in the queue.
+14000 rules inserted. The rule base contains 13761 rules. 28324 rules in the queue.
+14200 rules inserted. The rule base contains 13961 rules. 28390 rules in the queue.
+14400 rules inserted. The rule base contains 14161 rules. 28456 rules in the queue.
+14600 rules inserted. The rule base contains 14361 rules. 28524 rules in the queue.
+14800 rules inserted. The rule base contains 14561 rules. 28590 rules in the queue.
+15000 rules inserted. The rule base contains 14761 rules. 28656 rules in the queue.
+15200 rules inserted. The rule base contains 14961 rules. 28724 rules in the queue.
+15400 rules inserted. The rule base contains 15161 rules. 28790 rules in the queue.
+15600 rules inserted. The rule base contains 15361 rules. 28856 rules in the queue.
+15800 rules inserted. The rule base contains 15561 rules. 28928 rules in the queue.
+16000 rules inserted. The rule base contains 15761 rules. 29023 rules in the queue.
+16200 rules inserted. The rule base contains 15961 rules. 29122 rules in the queue.
+16400 rules inserted. The rule base contains 16161 rules. 29216 rules in the queue.
+16600 rules inserted. The rule base contains 16361 rules. 29312 rules in the queue.
+16800 rules inserted. The rule base contains 16561 rules. 29411 rules in the queue.
+17000 rules inserted. The rule base contains 16761 rules. 29505 rules in the queue.
+17200 rules inserted. The rule base contains 16961 rules. 29604 rules in the queue.
+17400 rules inserted. The rule base contains 17161 rules. 29700 rules in the queue.
+17600 rules inserted. The rule base contains 17361 rules. 29799 rules in the queue.
+17800 rules inserted. The rule base contains 17561 rules. 29893 rules in the queue.
+18000 rules inserted. The rule base contains 17761 rules. 29992 rules in the queue.
+18200 rules inserted. The rule base contains 17961 rules. 30088 rules in the queue.
+18400 rules inserted. The rule base contains 18161 rules. 30182 rules in the queue.
+18600 rules inserted. The rule base contains 18361 rules. 30281 rules in the queue.
+18800 rules inserted. The rule base contains 18561 rules. 30376 rules in the queue.
+19000 rules inserted. The rule base contains 18761 rules. 30476 rules in the queue.
+19200 rules inserted. The rule base contains 18961 rules. 30570 rules in the queue.
+19400 rules inserted. The rule base contains 19161 rules. 30669 rules in the queue.
+19600 rules inserted. The rule base contains 19361 rules. 30712 rules in the queue.
+19800 rules inserted. The rule base contains 19561 rules. 30712 rules in the queue.
+20000 rules inserted. The rule base contains 19761 rules. 30728 rules in the queue.
+20200 rules inserted. The rule base contains 19961 rules. 30823 rules in the queue.
+20400 rules inserted. The rule base contains 20161 rules. 30922 rules in the queue.
+20600 rules inserted. The rule base contains 20361 rules. 31016 rules in the queue.
+20800 rules inserted. The rule base contains 20561 rules. 31112 rules in the queue.
+21000 rules inserted. The rule base contains 20761 rules. 31211 rules in the queue.
+21200 rules inserted. The rule base contains 20961 rules. 31305 rules in the queue.
+21400 rules inserted. The rule base contains 21161 rules. 31404 rules in the queue.
+21600 rules inserted. The rule base contains 21361 rules. 31500 rules in the queue.
+21800 rules inserted. The rule base contains 21561 rules. 31599 rules in the queue.
+22000 rules inserted. The rule base contains 21761 rules. 31714 rules in the queue.
+22200 rules inserted. The rule base contains 21961 rules. 31829 rules in the queue.
+22400 rules inserted. The rule base contains 22161 rules. 31964 rules in the queue.
+22600 rules inserted. The rule base contains 22361 rules. 32079 rules in the queue.
+22800 rules inserted. The rule base contains 22561 rules. 32214 rules in the queue.
+23000 rules inserted. The rule base contains 22761 rules. 32329 rules in the queue.
+23200 rules inserted. The rule base contains 22961 rules. 32465 rules in the queue.
+23400 rules inserted. The rule base contains 23161 rules. 32580 rules in the queue.
+23600 rules inserted. The rule base contains 23361 rules. 32715 rules in the queue.
+23800 rules inserted. The rule base contains 23561 rules. 32844 rules in the queue.
+24000 rules inserted. The rule base contains 23761 rules. 32970 rules in the queue.
+24200 rules inserted. The rule base contains 23961 rules. 33107 rules in the queue.
+24400 rules inserted. The rule base contains 24161 rules. 33221 rules in the queue.
+24600 rules inserted. The rule base contains 24361 rules. 33355 rules in the queue.
+24800 rules inserted. The rule base contains 24561 rules. 33470 rules in the queue.
+25000 rules inserted. The rule base contains 24761 rules. 33606 rules in the queue.
+25200 rules inserted. The rule base contains 24961 rules. 33614 rules in the queue.
+25400 rules inserted. The rule base contains 25161 rules. 33624 rules in the queue.
+25600 rules inserted. The rule base contains 25361 rules. 33696 rules in the queue.
+25800 rules inserted. The rule base contains 25561 rules. 33796 rules in the queue.
+26000 rules inserted. The rule base contains 25761 rules. 33891 rules in the queue.
+26200 rules inserted. The rule base contains 25961 rules. 33990 rules in the queue.
+26400 rules inserted. The rule base contains 26161 rules. 34084 rules in the queue.
+26600 rules inserted. The rule base contains 26361 rules. 34184 rules in the queue.
+26800 rules inserted. The rule base contains 26561 rules. 34279 rules in the queue.
+27000 rules inserted. The rule base contains 26761 rules. 34378 rules in the queue.
+27200 rules inserted. The rule base contains 26961 rules. 34472 rules in the queue.
+27400 rules inserted. The rule base contains 27161 rules. 34568 rules in the queue.
+27600 rules inserted. The rule base contains 27361 rules. 34702 rules in the queue.
+27800 rules inserted. The rule base contains 27561 rules. 34822 rules in the queue.
+28000 rules inserted. The rule base contains 27761 rules. 34953 rules in the queue.
+28200 rules inserted. The rule base contains 27961 rules. 35073 rules in the queue.
+28400 rules inserted. The rule base contains 28161 rules. 35208 rules in the queue.
+28600 rules inserted. The rule base contains 28361 rules. 35323 rules in the queue.
+28800 rules inserted. The rule base contains 28561 rules. 35458 rules in the queue.
+29000 rules inserted. The rule base contains 28761 rules. 35573 rules in the queue.
+29200 rules inserted. The rule base contains 28961 rules. 35709 rules in the queue.
+29400 rules inserted. The rule base contains 29161 rules. 35824 rules in the queue.
+29600 rules inserted. The rule base contains 29361 rules. 35959 rules in the queue.
+29800 rules inserted. The rule base contains 29561 rules. 36074 rules in the queue.
+30000 rules inserted. The rule base contains 29761 rules. 36209 rules in the queue.
+30200 rules inserted. The rule base contains 29961 rules. 36324 rules in the queue.
+30400 rules inserted. The rule base contains 30161 rules. 36460 rules in the queue.
+30600 rules inserted. The rule base contains 30361 rules. 36526 rules in the queue.
+30800 rules inserted. The rule base contains 30561 rules. 36536 rules in the queue.
+31000 rules inserted. The rule base contains 30761 rules. 36544 rules in the queue.
+31200 rules inserted. The rule base contains 30961 rules. 36544 rules in the queue.
+31400 rules inserted. The rule base contains 31161 rules. 36544 rules in the queue.
+31600 rules inserted. The rule base contains 31361 rules. 36552 rules in the queue.
+31800 rules inserted. The rule base contains 31561 rules. 36566 rules in the queue.
+32000 rules inserted. The rule base contains 31761 rules. 36574 rules in the queue.
+32200 rules inserted. The rule base contains 31961 rules. 36584 rules in the queue.
+32400 rules inserted. The rule base contains 32161 rules. 36614 rules in the queue.
+32600 rules inserted. The rule base contains 32361 rules. 36614 rules in the queue.
+32800 rules inserted. The rule base contains 32561 rules. 36622 rules in the queue.
+33000 rules inserted. The rule base contains 32761 rules. 36721 rules in the queue.
+33200 rules inserted. The rule base contains 32961 rules. 36816 rules in the queue.
+33400 rules inserted. The rule base contains 33161 rules. 36916 rules in the queue.
+33600 rules inserted. The rule base contains 33361 rules. 37010 rules in the queue.
+33800 rules inserted. The rule base contains 33561 rules. 37109 rules in the queue.
+34000 rules inserted. The rule base contains 33761 rules. 37158 rules in the queue.
+34200 rules inserted. The rule base contains 33961 rules. 37252 rules in the queue.
+34400 rules inserted. The rule base contains 34161 rules. 37352 rules in the queue.
+34600 rules inserted. The rule base contains 34361 rules. 37447 rules in the queue.
+34800 rules inserted. The rule base contains 34561 rules. 37546 rules in the queue.
+35000 rules inserted. The rule base contains 34761 rules. 37640 rules in the queue.
+35200 rules inserted. The rule base contains 34961 rules. 37694 rules in the queue.
+35400 rules inserted. The rule base contains 35161 rules. 37788 rules in the queue.
+35600 rules inserted. The rule base contains 35361 rules. 37884 rules in the queue.
+35800 rules inserted. The rule base contains 35561 rules. 37983 rules in the queue.
+36000 rules inserted. The rule base contains 35761 rules. 38072 rules in the queue.
+36200 rules inserted. The rule base contains 35961 rules. 38140 rules in the queue.
+36400 rules inserted. The rule base contains 36161 rules. 38188 rules in the queue.
+36600 rules inserted. The rule base contains 36361 rules. 38186 rules in the queue.
+36800 rules inserted. The rule base contains 36561 rules. 38253 rules in the queue.
+37000 rules inserted. The rule base contains 36761 rules. 38319 rules in the queue.
+37200 rules inserted. The rule base contains 36961 rules. 38395 rules in the queue.
+37400 rules inserted. The rule base contains 37161 rules. 38499 rules in the queue.
+37600 rules inserted. The rule base contains 37361 rules. 38603 rules in the queue.
+37800 rules inserted. The rule base contains 37561 rules. 38698 rules in the queue.
+38000 rules inserted. The rule base contains 37761 rules. 38765 rules in the queue.
+38200 rules inserted. The rule base contains 37961 rules. 38850 rules in the queue.
+38400 rules inserted. The rule base contains 38161 rules. 38954 rules in the queue.
+38600 rules inserted. The rule base contains 38361 rules. 39058 rules in the queue.
+38800 rules inserted. The rule base contains 38561 rules. 39143 rules in the queue.
+39000 rules inserted. The rule base contains 38761 rules. 39210 rules in the queue.
+39200 rules inserted. The rule base contains 38961 rules. 39277 rules in the queue.
+39400 rules inserted. The rule base contains 39161 rules. 39343 rules in the queue.
+39600 rules inserted. The rule base contains 39361 rules. 39410 rules in the queue.
+39800 rules inserted. The rule base contains 39561 rules. 39477 rules in the queue.
+40000 rules inserted. The rule base contains 39761 rules. 39543 rules in the queue.
+40200 rules inserted. The rule base contains 39961 rules. 39610 rules in the queue.
+40400 rules inserted. The rule base contains 40161 rules. 39677 rules in the queue.
+40600 rules inserted. The rule base contains 40361 rules. 40187 rules in the queue.
+40800 rules inserted. The rule base contains 40561 rules. 40710 rules in the queue.
+41000 rules inserted. The rule base contains 40761 rules. 41227 rules in the queue.
+41200 rules inserted. The rule base contains 40961 rules. 41743 rules in the queue.
+41400 rules inserted. The rule base contains 41161 rules. 42274 rules in the queue.
+41600 rules inserted. The rule base contains 41361 rules. 42830 rules in the queue.
+41800 rules inserted. The rule base contains 41556 rules. 42761 rules in the queue.
+42000 rules inserted. The rule base contains 41756 rules. 42761 rules in the queue.
+42200 rules inserted. The rule base contains 41956 rules. 42761 rules in the queue.
+42400 rules inserted. The rule base contains 42156 rules. 42761 rules in the queue.
+42600 rules inserted. The rule base contains 42356 rules. 42761 rules in the queue.
+42800 rules inserted. The rule base contains 42556 rules. 42761 rules in the queue.
+43000 rules inserted. The rule base contains 42756 rules. 42761 rules in the queue.
+43200 rules inserted. The rule base contains 42956 rules. 42761 rules in the queue.
+43400 rules inserted. The rule base contains 43156 rules. 42761 rules in the queue.
+43600 rules inserted. The rule base contains 43356 rules. 42761 rules in the queue.
+43800 rules inserted. The rule base contains 43556 rules. 42761 rules in the queue.
+44000 rules inserted. The rule base contains 43756 rules. 42761 rules in the queue.
+44200 rules inserted. The rule base contains 43956 rules. 42761 rules in the queue.
+44400 rules inserted. The rule base contains 44156 rules. 42761 rules in the queue.
+44600 rules inserted. The rule base contains 44356 rules. 42761 rules in the queue.
+44800 rules inserted. The rule base contains 44556 rules. 42764 rules in the queue.
+45000 rules inserted. The rule base contains 44756 rules. 42774 rules in the queue.
+45200 rules inserted. The rule base contains 44956 rules. 42782 rules in the queue.
+45400 rules inserted. The rule base contains 45156 rules. 42790 rules in the queue.
+45600 rules inserted. The rule base contains 45356 rules. 42801 rules in the queue.
+45800 rules inserted. The rule base contains 45556 rules. 42809 rules in the queue.
+46000 rules inserted. The rule base contains 45756 rules. 42817 rules in the queue.
+46200 rules inserted. The rule base contains 45956 rules. 42828 rules in the queue.
+46400 rules inserted. The rule base contains 46156 rules. 42836 rules in the queue.
+46600 rules inserted. The rule base contains 46356 rules. 42844 rules in the queue.
+46800 rules inserted. The rule base contains 46556 rules. 42852 rules in the queue.
+47000 rules inserted. The rule base contains 46756 rules. 42860 rules in the queue.
+47200 rules inserted. The rule base contains 46956 rules. 42868 rules in the queue.
+47400 rules inserted. The rule base contains 47156 rules. 42878 rules in the queue.
+47600 rules inserted. The rule base contains 47356 rules. 42886 rules in the queue.
+47800 rules inserted. The rule base contains 47556 rules. 42894 rules in the queue.
+48000 rules inserted. The rule base contains 47756 rules. 42905 rules in the queue.
+48200 rules inserted. The rule base contains 47956 rules. 42913 rules in the queue.
+48400 rules inserted. The rule base contains 48156 rules. 42922 rules in the queue.
+48600 rules inserted. The rule base contains 48356 rules. 42932 rules in the queue.
+48800 rules inserted. The rule base contains 48556 rules. 42940 rules in the queue.
+49000 rules inserted. The rule base contains 48756 rules. 42948 rules in the queue.
+49200 rules inserted. The rule base contains 48956 rules. 42956 rules in the queue.
+49400 rules inserted. The rule base contains 49156 rules. 42964 rules in the queue.
+49600 rules inserted. The rule base contains 49356 rules. 42974 rules in the queue.
+49800 rules inserted. The rule base contains 49556 rules. 42982 rules in the queue.
+50000 rules inserted. The rule base contains 49756 rules. 42990 rules in the queue.
+50200 rules inserted. The rule base contains 49956 rules. 43000 rules in the queue.
+50400 rules inserted. The rule base contains 50156 rules. 43050 rules in the queue.
+50600 rules inserted. The rule base contains 50356 rules. 43100 rules in the queue.
+50800 rules inserted. The rule base contains 50556 rules. 43124 rules in the queue.
+51000 rules inserted. The rule base contains 50756 rules. 43134 rules in the queue.
+51200 rules inserted. The rule base contains 50956 rules. 43142 rules in the queue.
+51400 rules inserted. The rule base contains 51156 rules. 43150 rules in the queue.
+51600 rules inserted. The rule base contains 51356 rules. 43161 rules in the queue.
+51800 rules inserted. The rule base contains 51556 rules. 43169 rules in the queue.
+52000 rules inserted. The rule base contains 51756 rules. 43177 rules in the queue.
+52200 rules inserted. The rule base contains 51956 rules. 43188 rules in the queue.
+52400 rules inserted. The rule base contains 52156 rules. 43196 rules in the queue.
+52600 rules inserted. The rule base contains 52356 rules. 43204 rules in the queue.
+52800 rules inserted. The rule base contains 52556 rules. 43212 rules in the queue.
+53000 rules inserted. The rule base contains 52756 rules. 43220 rules in the queue.
+53200 rules inserted. The rule base contains 52956 rules. 43228 rules in the queue.
+53400 rules inserted. The rule base contains 53156 rules. 43238 rules in the queue.
+53600 rules inserted. The rule base contains 53356 rules. 43246 rules in the queue.
+53800 rules inserted. The rule base contains 53556 rules. 43269 rules in the queue.
+54000 rules inserted. The rule base contains 53756 rules. 43290 rules in the queue.
+54200 rules inserted. The rule base contains 53956 rules. 43313 rules in the queue.
+54400 rules inserted. The rule base contains 54156 rules. 43337 rules in the queue.
+54600 rules inserted. The rule base contains 54356 rules. 43358 rules in the queue.
+54800 rules inserted. The rule base contains 54556 rules. 43381 rules in the queue.
+55000 rules inserted. The rule base contains 54756 rules. 43404 rules in the queue.
+55200 rules inserted. The rule base contains 54956 rules. 43426 rules in the queue.
+55400 rules inserted. The rule base contains 55156 rules. 43448 rules in the queue.
+55600 rules inserted. The rule base contains 55356 rules. 43472 rules in the queue.
+55800 rules inserted. The rule base contains 55556 rules. 43488 rules in the queue.
+56000 rules inserted. The rule base contains 55756 rules. 43506 rules in the queue.
+56200 rules inserted. The rule base contains 55956 rules. 43524 rules in the queue.
+56400 rules inserted. The rule base contains 56156 rules. 43546 rules in the queue.
+56600 rules inserted. The rule base contains 56356 rules. 43568 rules in the queue.
+56800 rules inserted. The rule base contains 56556 rules. 43591 rules in the queue.
+57000 rules inserted. The rule base contains 56756 rules. 43612 rules in the queue.
+57200 rules inserted. The rule base contains 56956 rules. 43635 rules in the queue.
+57400 rules inserted. The rule base contains 57156 rules. 43658 rules in the queue.
+57600 rules inserted. The rule base contains 57356 rules. 43679 rules in the queue.
+57800 rules inserted. The rule base contains 57556 rules. 43702 rules in the queue.
+58000 rules inserted. The rule base contains 57756 rules. 43725 rules in the queue.
+58200 rules inserted. The rule base contains 57956 rules. 43746 rules in the queue.
+58400 rules inserted. The rule base contains 58156 rules. 43769 rules in the queue.
+58600 rules inserted. The rule base contains 58356 rules. 43792 rules in the queue.
+58800 rules inserted. The rule base contains 58556 rules. 43828 rules in the queue.
+59000 rules inserted. The rule base contains 58756 rules. 43868 rules in the queue.
+59200 rules inserted. The rule base contains 58956 rules. 43888 rules in the queue.
+59400 rules inserted. The rule base contains 59156 rules. 43898 rules in the queue.
+59600 rules inserted. The rule base contains 59356 rules. 43906 rules in the queue.
+59800 rules inserted. The rule base contains 59556 rules. 43914 rules in the queue.
+60000 rules inserted. The rule base contains 59756 rules. 43925 rules in the queue.
+60200 rules inserted. The rule base contains 59956 rules. 43933 rules in the queue.
+60400 rules inserted. The rule base contains 60156 rules. 43941 rules in the queue.
+60600 rules inserted. The rule base contains 60356 rules. 43952 rules in the queue.
+60800 rules inserted. The rule base contains 60556 rules. 43960 rules in the queue.
+61000 rules inserted. The rule base contains 60756 rules. 43968 rules in the queue.
+61200 rules inserted. The rule base contains 60956 rules. 43976 rules in the queue.
+61400 rules inserted. The rule base contains 61156 rules. 43984 rules in the queue.
+61600 rules inserted. The rule base contains 61356 rules. 43992 rules in the queue.
+61800 rules inserted. The rule base contains 61556 rules. 44002 rules in the queue.
+62000 rules inserted. The rule base contains 61756 rules. 44010 rules in the queue.
+62200 rules inserted. The rule base contains 61956 rules. 44033 rules in the queue.
+62400 rules inserted. The rule base contains 62156 rules. 44054 rules in the queue.
+62600 rules inserted. The rule base contains 62356 rules. 44077 rules in the queue.
+62800 rules inserted. The rule base contains 62556 rules. 44101 rules in the queue.
+63000 rules inserted. The rule base contains 62756 rules. 44122 rules in the queue.
+63200 rules inserted. The rule base contains 62956 rules. 44145 rules in the queue.
+63400 rules inserted. The rule base contains 63156 rules. 44168 rules in the queue.
+63600 rules inserted. The rule base contains 63356 rules. 44190 rules in the queue.
+63800 rules inserted. The rule base contains 63556 rules. 44212 rules in the queue.
+64000 rules inserted. The rule base contains 63756 rules. 44236 rules in the queue.
+64200 rules inserted. The rule base contains 63956 rules. 44252 rules in the queue.
+64400 rules inserted. The rule base contains 64156 rules. 44270 rules in the queue.
+64600 rules inserted. The rule base contains 64356 rules. 44288 rules in the queue.
+64800 rules inserted. The rule base contains 64556 rules. 44310 rules in the queue.
+65000 rules inserted. The rule base contains 64756 rules. 44332 rules in the queue.
+65200 rules inserted. The rule base contains 64956 rules. 44355 rules in the queue.
+65400 rules inserted. The rule base contains 65156 rules. 44376 rules in the queue.
+65600 rules inserted. The rule base contains 65356 rules. 44399 rules in the queue.
+65800 rules inserted. The rule base contains 65556 rules. 44422 rules in the queue.
+66000 rules inserted. The rule base contains 65756 rules. 44443 rules in the queue.
+66200 rules inserted. The rule base contains 65956 rules. 44466 rules in the queue.
+66400 rules inserted. The rule base contains 66156 rules. 44489 rules in the queue.
+66600 rules inserted. The rule base contains 66356 rules. 44510 rules in the queue.
+66800 rules inserted. The rule base contains 66556 rules. 44533 rules in the queue.
+67000 rules inserted. The rule base contains 66756 rules. 44556 rules in the queue.
+67200 rules inserted. The rule base contains 66956 rules. 44588 rules in the queue.
+67400 rules inserted. The rule base contains 67156 rules. 44628 rules in the queue.
+67600 rules inserted. The rule base contains 67356 rules. 44674 rules in the queue.
+67800 rules inserted. The rule base contains 67556 rules. 44724 rules in the queue.
+68000 rules inserted. The rule base contains 67756 rules. 44768 rules in the queue.
+68200 rules inserted. The rule base contains 67956 rules. 44808 rules in the queue.
+68400 rules inserted. The rule base contains 68156 rules. 44848 rules in the queue.
+68600 rules inserted. The rule base contains 68356 rules. 44880 rules in the queue.
+68800 rules inserted. The rule base contains 68556 rules. 44920 rules in the queue.
+69000 rules inserted. The rule base contains 68756 rules. 44975 rules in the queue.
+69200 rules inserted. The rule base contains 68956 rules. 45024 rules in the queue.
+69400 rules inserted. The rule base contains 69156 rules. 45073 rules in the queue.
+69600 rules inserted. The rule base contains 69356 rules. 45081 rules in the queue.
+69800 rules inserted. The rule base contains 69556 rules. 45090 rules in the queue.
+70000 rules inserted. The rule base contains 69756 rules. 45100 rules in the queue.
+70200 rules inserted. The rule base contains 69956 rules. 45108 rules in the queue.
+70400 rules inserted. The rule base contains 70156 rules. 45116 rules in the queue.
+70600 rules inserted. The rule base contains 70356 rules. 45124 rules in the queue.
+70800 rules inserted. The rule base contains 70556 rules. 45132 rules in the queue.
+71000 rules inserted. The rule base contains 70756 rules. 45142 rules in the queue.
+71200 rules inserted. The rule base contains 70956 rules. 45172 rules in the queue.
+71400 rules inserted. The rule base contains 71156 rules. 45180 rules in the queue.
+71600 rules inserted. The rule base contains 71356 rules. 45188 rules in the queue.
+71800 rules inserted. The rule base contains 71556 rules. 45196 rules in the queue.
+72000 rules inserted. The rule base contains 71756 rules. 45204 rules in the queue.
+72200 rules inserted. The rule base contains 71956 rules. 45214 rules in the queue.
+72400 rules inserted. The rule base contains 72156 rules. 45222 rules in the queue.
+72600 rules inserted. The rule base contains 72356 rules. 45230 rules in the queue.
+72800 rules inserted. The rule base contains 72556 rules. 45240 rules in the queue.
+73000 rules inserted. The rule base contains 72756 rules. 45268 rules in the queue.
+73200 rules inserted. The rule base contains 72956 rules. 45276 rules in the queue.
+73400 rules inserted. The rule base contains 73156 rules. 45286 rules in the queue.
+73600 rules inserted. The rule base contains 73356 rules. 45294 rules in the queue.
+73800 rules inserted. The rule base contains 73556 rules. 45302 rules in the queue.
+74000 rules inserted. The rule base contains 73756 rules. 45313 rules in the queue.
+74200 rules inserted. The rule base contains 73956 rules. 45313 rules in the queue.
+74400 rules inserted. The rule base contains 74156 rules. 45313 rules in the queue.
+74600 rules inserted. The rule base contains 74356 rules. 45284 rules in the queue.
+74800 rules inserted. The rule base contains 74556 rules. 45304 rules in the queue.
+75000 rules inserted. The rule base contains 74756 rules. 45304 rules in the queue.
+75200 rules inserted. The rule base contains 74956 rules. 45304 rules in the queue.
+75400 rules inserted. The rule base contains 75156 rules. 45304 rules in the queue.
+75600 rules inserted. The rule base contains 75356 rules. 45307 rules in the queue.
+75800 rules inserted. The rule base contains 75556 rules. 45320 rules in the queue.
+76000 rules inserted. The rule base contains 75756 rules. 45331 rules in the queue.
+76200 rules inserted. The rule base contains 75956 rules. 45339 rules in the queue.
+76400 rules inserted. The rule base contains 76156 rules. 45349 rules in the queue.
+76600 rules inserted. The rule base contains 76356 rules. 45352 rules in the queue.
+76800 rules inserted. The rule base contains 76556 rules. 45352 rules in the queue.
+77000 rules inserted. The rule base contains 76756 rules. 45357 rules in the queue.
+77200 rules inserted. The rule base contains 76956 rules. 45368 rules in the queue.
+77400 rules inserted. The rule base contains 77156 rules. 45379 rules in the queue.
+77600 rules inserted. The rule base contains 77356 rules. 45387 rules in the queue.
+77800 rules inserted. The rule base contains 77556 rules. 45400 rules in the queue.
+78000 rules inserted. The rule base contains 77756 rules. 45400 rules in the queue.
+78200 rules inserted. The rule base contains 77956 rules. 45400 rules in the queue.
+78400 rules inserted. The rule base contains 78156 rules. 45400 rules in the queue.
+78600 rules inserted. The rule base contains 78356 rules. 45400 rules in the queue.
+78800 rules inserted. The rule base contains 78556 rules. 45400 rules in the queue.
+79000 rules inserted. The rule base contains 78756 rules. 45400 rules in the queue.
+79200 rules inserted. The rule base contains 78956 rules. 45400 rules in the queue.
+79400 rules inserted. The rule base contains 79156 rules. 45400 rules in the queue.
+79600 rules inserted. The rule base contains 79356 rules. 45400 rules in the queue.
+79800 rules inserted. The rule base contains 79556 rules. 45400 rules in the queue.
+80000 rules inserted. The rule base contains 79756 rules. 45400 rules in the queue.
+80200 rules inserted. The rule base contains 79956 rules. 45426 rules in the queue.
+80400 rules inserted. The rule base contains 80156 rules. 45521 rules in the queue.
+80600 rules inserted. The rule base contains 80356 rules. 45611 rules in the queue.
+80800 rules inserted. The rule base contains 80556 rules. 45705 rules in the queue.
+81000 rules inserted. The rule base contains 80756 rules. 45796 rules in the queue.
+81200 rules inserted. The rule base contains 80956 rules. 45885 rules in the queue.
+81400 rules inserted. The rule base contains 81156 rules. 45981 rules in the queue.
+81600 rules inserted. The rule base contains 81356 rules. 46029 rules in the queue.
+81800 rules inserted. The rule base contains 81556 rules. 46119 rules in the queue.
+82000 rules inserted. The rule base contains 81756 rules. 46209 rules in the queue.
+82200 rules inserted. The rule base contains 81956 rules. 46304 rules in the queue.
+82400 rules inserted. The rule base contains 82156 rules. 46393 rules in the queue.
+82600 rules inserted. The rule base contains 82356 rules. 46489 rules in the queue.
+82800 rules inserted. The rule base contains 82556 rules. 46578 rules in the queue.
+83000 rules inserted. The rule base contains 82756 rules. 46627 rules in the queue.
+83200 rules inserted. The rule base contains 82956 rules. 46717 rules in the queue.
+83400 rules inserted. The rule base contains 83156 rules. 46812 rules in the queue.
+83600 rules inserted. The rule base contains 83356 rules. 46901 rules in the queue.
+83800 rules inserted. The rule base contains 83556 rules. 46992 rules in the queue.
+84000 rules inserted. The rule base contains 83756 rules. 47073 rules in the queue.
+84200 rules inserted. The rule base contains 83956 rules. 47139 rules in the queue.
+84400 rules inserted. The rule base contains 84156 rules. 47182 rules in the queue.
+84600 rules inserted. The rule base contains 84353 rules. 47148 rules in the queue.
+84800 rules inserted. The rule base contains 84553 rules. 47198 rules in the queue.
+85000 rules inserted. The rule base contains 84753 rules. 47248 rules in the queue.
+85200 rules inserted. The rule base contains 84953 rules. 47298 rules in the queue.
+85400 rules inserted. The rule base contains 85153 rules. 47348 rules in the queue.
+85600 rules inserted. The rule base contains 85353 rules. 47398 rules in the queue.
+85800 rules inserted. The rule base contains 85553 rules. 47448 rules in the queue.
+86000 rules inserted. The rule base contains 85753 rules. 47498 rules in the queue.
+86200 rules inserted. The rule base contains 85953 rules. 47548 rules in the queue.
+86400 rules inserted. The rule base contains 86153 rules. 47598 rules in the queue.
+86600 rules inserted. The rule base contains 86353 rules. 47648 rules in the queue.
+86800 rules inserted. The rule base contains 86553 rules. 47698 rules in the queue.
+87000 rules inserted. The rule base contains 86753 rules. 47748 rules in the queue.
+87200 rules inserted. The rule base contains 86953 rules. 47798 rules in the queue.
+87400 rules inserted. The rule base contains 87153 rules. 47848 rules in the queue.
+87600 rules inserted. The rule base contains 87353 rules. 47877 rules in the queue.
+87800 rules inserted. The rule base contains 87553 rules. 47914 rules in the queue.
+88000 rules inserted. The rule base contains 87753 rules. 47956 rules in the queue.
+88200 rules inserted. The rule base contains 87953 rules. 47999 rules in the queue.
+88400 rules inserted. The rule base contains 88153 rules. 48038 rules in the queue.
+88600 rules inserted. The rule base contains 88353 rules. 48080 rules in the queue.
+88800 rules inserted. The rule base contains 88553 rules. 48122 rules in the queue.
+89000 rules inserted. The rule base contains 88753 rules. 48164 rules in the queue.
+89200 rules inserted. The rule base contains 88953 rules. 48206 rules in the queue.
+89400 rules inserted. The rule base contains 89153 rules. 48249 rules in the queue.
+89600 rules inserted. The rule base contains 89353 rules. 48288 rules in the queue.
+89800 rules inserted. The rule base contains 89553 rules. 48330 rules in the queue.
+90000 rules inserted. The rule base contains 89753 rules. 48372 rules in the queue.
+90200 rules inserted. The rule base contains 89953 rules. 48414 rules in the queue.
+90400 rules inserted. The rule base contains 90153 rules. 48448 rules in the queue.
+90600 rules inserted. The rule base contains 90353 rules. 48479 rules in the queue.
+90800 rules inserted. The rule base contains 90553 rules. 48518 rules in the queue.
+91000 rules inserted. The rule base contains 90753 rules. 48560 rules in the queue.
+91200 rules inserted. The rule base contains 90953 rules. 48587 rules in the queue.
+91400 rules inserted. The rule base contains 91153 rules. 48624 rules in the queue.
+91600 rules inserted. The rule base contains 91353 rules. 48666 rules in the queue.
+91800 rules inserted. The rule base contains 91553 rules. 48709 rules in the queue.
+92000 rules inserted. The rule base contains 91753 rules. 48748 rules in the queue.
+92200 rules inserted. The rule base contains 91953 rules. 48790 rules in the queue.
+92400 rules inserted. The rule base contains 92153 rules. 48832 rules in the queue.
+92600 rules inserted. The rule base contains 92353 rules. 48874 rules in the queue.
+92800 rules inserted. The rule base contains 92553 rules. 48916 rules in the queue.
+93000 rules inserted. The rule base contains 92753 rules. 48959 rules in the queue.
+93200 rules inserted. The rule base contains 92953 rules. 49013 rules in the queue.
+93400 rules inserted. The rule base contains 93153 rules. 49170 rules in the queue.
+93600 rules inserted. The rule base contains 93353 rules. 49246 rules in the queue.
+93800 rules inserted. The rule base contains 93553 rules. 49316 rules in the queue.
+94000 rules inserted. The rule base contains 93753 rules. 49330 rules in the queue.
+94200 rules inserted. The rule base contains 93953 rules. 49368 rules in the queue.
+94400 rules inserted. The rule base contains 94153 rules. 49410 rules in the queue.
+94600 rules inserted. The rule base contains 94353 rules. 49444 rules in the queue.
+94800 rules inserted. The rule base contains 94553 rules. 49479 rules in the queue.
+95000 rules inserted. The rule base contains 94753 rules. 49518 rules in the queue.
+95200 rules inserted. The rule base contains 94953 rules. 49560 rules in the queue.
+95400 rules inserted. The rule base contains 95153 rules. 49590 rules in the queue.
+95600 rules inserted. The rule base contains 95353 rules. 49628 rules in the queue.
+95800 rules inserted. The rule base contains 95553 rules. 49670 rules in the queue.
+96000 rules inserted. The rule base contains 95753 rules. 49709 rules in the queue.
+96200 rules inserted. The rule base contains 95953 rules. 49736 rules in the queue.
+96400 rules inserted. The rule base contains 96153 rules. 49778 rules in the queue.
+96600 rules inserted. The rule base contains 96353 rules. 49820 rules in the queue.
+96800 rules inserted. The rule base contains 96553 rules. 49834 rules in the queue.
+97000 rules inserted. The rule base contains 96753 rules. 49865 rules in the queue.
+97200 rules inserted. The rule base contains 96953 rules. 49897 rules in the queue.
+97400 rules inserted. The rule base contains 97153 rules. 49931 rules in the queue.
+97600 rules inserted. The rule base contains 97353 rules. 49970 rules in the queue.
+97800 rules inserted. The rule base contains 97553 rules. 50008 rules in the queue.
+98000 rules inserted. The rule base contains 97753 rules. 50043 rules in the queue.
+98200 rules inserted. The rule base contains 97953 rules. 50075 rules in the queue.
+98400 rules inserted. The rule base contains 98153 rules. 50109 rules in the queue.
+98600 rules inserted. The rule base contains 98353 rules. 50144 rules in the queue.
+98800 rules inserted. The rule base contains 98553 rules. 50181 rules in the queue.
+99000 rules inserted. The rule base contains 98753 rules. 50221 rules in the queue.
+99200 rules inserted. The rule base contains 98953 rules. 50253 rules in the queue.
+99400 rules inserted. The rule base contains 99153 rules. 50287 rules in the queue.
+99600 rules inserted. The rule base contains 99353 rules. 50307 rules in the queue.
+99800 rules inserted. The rule base contains 99553 rules. 50325 rules in the queue.
+100000 rules inserted. The rule base contains 99753 rules. 50357 rules in the queue.
+100200 rules inserted. The rule base contains 99953 rules. 50399 rules in the queue.
+100400 rules inserted. The rule base contains 100153 rules. 50413 rules in the queue.
+100600 rules inserted. The rule base contains 100353 rules. 50448 rules in the queue.
+100800 rules inserted. The rule base contains 100553 rules. 50483 rules in the queue.
+101000 rules inserted. The rule base contains 100753 rules. 50517 rules in the queue.
+101200 rules inserted. The rule base contains 100953 rules. 50549 rules in the queue.
+101400 rules inserted. The rule base contains 101153 rules. 50590 rules in the queue.
+101600 rules inserted. The rule base contains 101353 rules. 50626 rules in the queue.
+101800 rules inserted. The rule base contains 101553 rules. 50661 rules in the queue.
+102000 rules inserted. The rule base contains 101753 rules. 50695 rules in the queue.
+102200 rules inserted. The rule base contains 101953 rules. 50727 rules in the queue.
+102400 rules inserted. The rule base contains 102153 rules. 50777 rules in the queue.
+102600 rules inserted. The rule base contains 102353 rules. 50832 rules in the queue.
+102800 rules inserted. The rule base contains 102553 rules. 50873 rules in the queue.
+103000 rules inserted. The rule base contains 102753 rules. 50909 rules in the queue.
+103200 rules inserted. The rule base contains 102953 rules. 50925 rules in the queue.
+103400 rules inserted. The rule base contains 103153 rules. 50967 rules in the queue.
+103600 rules inserted. The rule base contains 103353 rules. 51009 rules in the queue.
+103800 rules inserted. The rule base contains 103553 rules. 51033 rules in the queue.
+104000 rules inserted. The rule base contains 103753 rules. 51061 rules in the queue.
+104200 rules inserted. The rule base contains 103953 rules. 51103 rules in the queue.
+104400 rules inserted. The rule base contains 104153 rules. 51143 rules in the queue.
+104600 rules inserted. The rule base contains 104353 rules. 51169 rules in the queue.
+104800 rules inserted. The rule base contains 104553 rules. 51211 rules in the queue.
+105000 rules inserted. The rule base contains 104753 rules. 51253 rules in the queue.
+105200 rules inserted. The rule base contains 104953 rules. 51287 rules in the queue.
+105400 rules inserted. The rule base contains 105153 rules. 51321 rules in the queue.
+105600 rules inserted. The rule base contains 105353 rules. 51361 rules in the queue.
+105800 rules inserted. The rule base contains 105553 rules. 51403 rules in the queue.
+106000 rules inserted. The rule base contains 105753 rules. 51407 rules in the queue.
+106200 rules inserted. The rule base contains 105953 rules. 51435 rules in the queue.
+106400 rules inserted. The rule base contains 106153 rules. 51470 rules in the queue.
+106600 rules inserted. The rule base contains 106353 rules. 51495 rules in the queue.
+106800 rules inserted. The rule base contains 106553 rules. 51509 rules in the queue.
+107000 rules inserted. The rule base contains 106753 rules. 51547 rules in the queue.
+107200 rules inserted. The rule base contains 106953 rules. 51585 rules in the queue.
+107400 rules inserted. The rule base contains 107153 rules. 51608 rules in the queue.
+107600 rules inserted. The rule base contains 107353 rules. 51637 rules in the queue.
+107800 rules inserted. The rule base contains 107553 rules. 51671 rules in the queue.
+108000 rules inserted. The rule base contains 107753 rules. 51701 rules in the queue.
+108200 rules inserted. The rule base contains 107953 rules. 51726 rules in the queue.
+108400 rules inserted. The rule base contains 108153 rules. 51766 rules in the queue.
+108600 rules inserted. The rule base contains 108353 rules. 51799 rules in the queue.
+108800 rules inserted. The rule base contains 108553 rules. 51809 rules in the queue.
+109000 rules inserted. The rule base contains 108753 rules. 51835 rules in the queue.
+109200 rules inserted. The rule base contains 108953 rules. 51870 rules in the queue.
+109400 rules inserted. The rule base contains 109153 rules. 51905 rules in the queue.
+109600 rules inserted. The rule base contains 109353 rules. 51913 rules in the queue.
+109800 rules inserted. The rule base contains 109553 rules. 51947 rules in the queue.
+110000 rules inserted. The rule base contains 109753 rules. 51981 rules in the queue.
+110200 rules inserted. The rule base contains 109953 rules. 52016 rules in the queue.
+110400 rules inserted. The rule base contains 110153 rules. 52051 rules in the queue.
+110600 rules inserted. The rule base contains 110353 rules. 52083 rules in the queue.
+110800 rules inserted. The rule base contains 110553 rules. 52123 rules in the queue.
+111000 rules inserted. The rule base contains 110753 rules. 52159 rules in the queue.
+111200 rules inserted. The rule base contains 110953 rules. 52194 rules in the queue.
+111400 rules inserted. The rule base contains 111153 rules. 52229 rules in the queue.
+111600 rules inserted. The rule base contains 111353 rules. 52294 rules in the queue.
+111800 rules inserted. The rule base contains 111553 rules. 52321 rules in the queue.
+112000 rules inserted. The rule base contains 111753 rules. 52362 rules in the queue.
+112200 rules inserted. The rule base contains 111953 rules. 52499 rules in the queue.
+112400 rules inserted. The rule base contains 112153 rules. 52575 rules in the queue.
+112600 rules inserted. The rule base contains 112353 rules. 52671 rules in the queue.
+112800 rules inserted. The rule base contains 112553 rules. 52754 rules in the queue.
+113000 rules inserted. The rule base contains 112753 rules. 52792 rules in the queue.
+113200 rules inserted. The rule base contains 112953 rules. 52834 rules in the queue.
+113400 rules inserted. The rule base contains 113153 rules. 52905 rules in the queue.
+113600 rules inserted. The rule base contains 113353 rules. 52935 rules in the queue.
+113800 rules inserted. The rule base contains 113553 rules. 52976 rules in the queue.
+114000 rules inserted. The rule base contains 113753 rules. 53253 rules in the queue.
+114200 rules inserted. The rule base contains 113953 rules. 53351 rules in the queue.
+114400 rules inserted. The rule base contains 114153 rules. 53423 rules in the queue.
+114600 rules inserted. The rule base contains 114353 rules. 53499 rules in the queue.
+114800 rules inserted. The rule base contains 114553 rules. 53538 rules in the queue.
+115000 rules inserted. The rule base contains 114753 rules. 53580 rules in the queue.
+115200 rules inserted. The rule base contains 114953 rules. 53618 rules in the queue.
+115400 rules inserted. The rule base contains 115153 rules. 53660 rules in the queue.
+115600 rules inserted. The rule base contains 115353 rules. 53698 rules in the queue.
+115800 rules inserted. The rule base contains 115553 rules. 53741 rules in the queue.
+116000 rules inserted. The rule base contains 115753 rules. 53780 rules in the queue.
+116200 rules inserted. The rule base contains 115953 rules. 53821 rules in the queue.
+116400 rules inserted. The rule base contains 116153 rules. 53865 rules in the queue.
+116600 rules inserted. The rule base contains 116353 rules. 53900 rules in the queue.
+116800 rules inserted. The rule base contains 116553 rules. 53942 rules in the queue.
+117000 rules inserted. The rule base contains 116753 rules. 53980 rules in the queue.
+117200 rules inserted. The rule base contains 116953 rules. 54018 rules in the queue.
+117400 rules inserted. The rule base contains 117153 rules. 54060 rules in the queue.
+117600 rules inserted. The rule base contains 117353 rules. 54099 rules in the queue.
+117800 rules inserted. The rule base contains 117553 rules. 54134 rules in the queue.
+118000 rules inserted. The rule base contains 117753 rules. 54176 rules in the queue.
+118200 rules inserted. The rule base contains 117953 rules. 54219 rules in the queue.
+118400 rules inserted. The rule base contains 118153 rules. 54258 rules in the queue.
+118600 rules inserted. The rule base contains 118353 rules. 54300 rules in the queue.
+118800 rules inserted. The rule base contains 118553 rules. 54338 rules in the queue.
+119000 rules inserted. The rule base contains 118753 rules. 54376 rules in the queue.
+119200 rules inserted. The rule base contains 118953 rules. 54418 rules in the queue.
+119400 rules inserted. The rule base contains 119153 rules. 54458 rules in the queue.
+119600 rules inserted. The rule base contains 119353 rules. 54504 rules in the queue.
+119800 rules inserted. The rule base contains 119553 rules. 54550 rules in the queue.
+120000 rules inserted. The rule base contains 119753 rules. 54603 rules in the queue.
+120200 rules inserted. The rule base contains 119953 rules. 54653 rules in the queue.
+120400 rules inserted. The rule base contains 120153 rules. 54703 rules in the queue.
+120600 rules inserted. The rule base contains 120353 rules. 54753 rules in the queue.
+120800 rules inserted. The rule base contains 120553 rules. 54803 rules in the queue.
+121000 rules inserted. The rule base contains 120753 rules. 54843 rules in the queue.
+121200 rules inserted. The rule base contains 120953 rules. 54883 rules in the queue.
+121400 rules inserted. The rule base contains 121153 rules. 54923 rules in the queue.
+121600 rules inserted. The rule base contains 121353 rules. 54959 rules in the queue.
+121800 rules inserted. The rule base contains 121553 rules. 55001 rules in the queue.
+122000 rules inserted. The rule base contains 121753 rules. 55051 rules in the queue.
+122200 rules inserted. The rule base contains 121953 rules. 55093 rules in the queue.
+122400 rules inserted. The rule base contains 122153 rules. 55135 rules in the queue.
+122600 rules inserted. The rule base contains 122353 rules. 55175 rules in the queue.
+122800 rules inserted. The rule base contains 122553 rules. 55215 rules in the queue.
+123000 rules inserted. The rule base contains 122753 rules. 55251 rules in the queue.
+123200 rules inserted. The rule base contains 122953 rules. 55291 rules in the queue.
+123400 rules inserted. The rule base contains 123153 rules. 55341 rules in the queue.
+123600 rules inserted. The rule base contains 123353 rules. 55383 rules in the queue.
+123800 rules inserted. The rule base contains 123553 rules. 55433 rules in the queue.
+124000 rules inserted. The rule base contains 123753 rules. 55483 rules in the queue.
+124200 rules inserted. The rule base contains 123953 rules. 55533 rules in the queue.
+124400 rules inserted. The rule base contains 124153 rules. 55583 rules in the queue.
+124600 rules inserted. The rule base contains 124353 rules. 55633 rules in the queue.
+124800 rules inserted. The rule base contains 124553 rules. 55683 rules in the queue.
+125000 rules inserted. The rule base contains 124753 rules. 55733 rules in the queue.
+125200 rules inserted. The rule base contains 124953 rules. 55783 rules in the queue.
+125400 rules inserted. The rule base contains 125153 rules. 55833 rules in the queue.
+125600 rules inserted. The rule base contains 125353 rules. 55867 rules in the queue.
+125800 rules inserted. The rule base contains 125553 rules. 55875 rules in the queue.
+126000 rules inserted. The rule base contains 125753 rules. 55881 rules in the queue.
+126200 rules inserted. The rule base contains 125953 rules. 55889 rules in the queue.
+126400 rules inserted. The rule base contains 126153 rules. 55897 rules in the queue.
+126600 rules inserted. The rule base contains 126353 rules. 55905 rules in the queue.
+126800 rules inserted. The rule base contains 126553 rules. 55913 rules in the queue.
+127000 rules inserted. The rule base contains 126753 rules. 55921 rules in the queue.
+127200 rules inserted. The rule base contains 126953 rules. 55927 rules in the queue.
+127400 rules inserted. The rule base contains 127153 rules. 55934 rules in the queue.
+127600 rules inserted. The rule base contains 127353 rules. 55961 rules in the queue.
+127800 rules inserted. The rule base contains 127553 rules. 55969 rules in the queue.
+128000 rules inserted. The rule base contains 127753 rules. 55977 rules in the queue.
+128200 rules inserted. The rule base contains 127953 rules. 55985 rules in the queue.
+128400 rules inserted. The rule base contains 128153 rules. 55993 rules in the queue.
+128600 rules inserted. The rule base contains 128353 rules. 56001 rules in the queue.
+128800 rules inserted. The rule base contains 128553 rules. 56006 rules in the queue.
+129000 rules inserted. The rule base contains 128753 rules. 56014 rules in the queue.
+129200 rules inserted. The rule base contains 128953 rules. 56022 rules in the queue.
+129400 rules inserted. The rule base contains 129153 rules. 56027 rules in the queue.
+129600 rules inserted. The rule base contains 129353 rules. 56055 rules in the queue.
+129800 rules inserted. The rule base contains 129553 rules. 56065 rules in the queue.
+130000 rules inserted. The rule base contains 129753 rules. 56073 rules in the queue.
+130200 rules inserted. The rule base contains 129953 rules. 56079 rules in the queue.
+130400 rules inserted. The rule base contains 130153 rules. 56086 rules in the queue.
+130600 rules inserted. The rule base contains 130353 rules. 56094 rules in the queue.
+130800 rules inserted. The rule base contains 130553 rules. 56102 rules in the queue.
+131000 rules inserted. The rule base contains 130753 rules. 56105 rules in the queue.
+131200 rules inserted. The rule base contains 130953 rules. 56105 rules in the queue.
+131400 rules inserted. The rule base contains 131153 rules. 56105 rules in the queue.
+131600 rules inserted. The rule base contains 131353 rules. 56081 rules in the queue.
+131800 rules inserted. The rule base contains 131552 rules. 56423 rules in the queue.
+132000 rules inserted. The rule base contains 131752 rules. 56802 rules in the queue.
+132200 rules inserted. The rule base contains 131952 rules. 56842 rules in the queue.
+132400 rules inserted. The rule base contains 132152 rules. 56882 rules in the queue.
+132600 rules inserted. The rule base contains 132352 rules. 56938 rules in the queue.
+132800 rules inserted. The rule base contains 132552 rules. 57233 rules in the queue.
+133000 rules inserted. The rule base contains 132752 rules. 57370 rules in the queue.
+133200 rules inserted. The rule base contains 132952 rules. 57410 rules in the queue.
+133400 rules inserted. The rule base contains 133152 rules. 57450 rules in the queue.
+133600 rules inserted. The rule base contains 133352 rules. 57639 rules in the queue.
+133800 rules inserted. The rule base contains 133552 rules. 57898 rules in the queue.
+134000 rules inserted. The rule base contains 133752 rules. 57938 rules in the queue.
+134200 rules inserted. The rule base contains 133952 rules. 57978 rules in the queue.
+134400 rules inserted. The rule base contains 134152 rules. 58034 rules in the queue.
+134600 rules inserted. The rule base contains 134352 rules. 58291 rules in the queue.
+134800 rules inserted. The rule base contains 134552 rules. 58422 rules in the queue.
+135000 rules inserted. The rule base contains 134752 rules. 58462 rules in the queue.
+135200 rules inserted. The rule base contains 134952 rules. 58502 rules in the queue.
+135400 rules inserted. The rule base contains 135152 rules. 58666 rules in the queue.
+135600 rules inserted. The rule base contains 135352 rules. 58856 rules in the queue.
+135800 rules inserted. The rule base contains 135552 rules. 58897 rules in the queue.
+136000 rules inserted. The rule base contains 135752 rules. 58926 rules in the queue.
+136200 rules inserted. The rule base contains 135952 rules. 58982 rules in the queue.
+136400 rules inserted. The rule base contains 136152 rules. 59225 rules in the queue.
+136600 rules inserted. The rule base contains 136352 rules. 59267 rules in the queue.
+136800 rules inserted. The rule base contains 136552 rules. 59308 rules in the queue.
+137000 rules inserted. The rule base contains 136752 rules. 59349 rules in the queue.
+137200 rules inserted. The rule base contains 136952 rules. 59546 rules in the queue.
+137400 rules inserted. The rule base contains 137152 rules. 59656 rules in the queue.
+137600 rules inserted. The rule base contains 137352 rules. 59698 rules in the queue.
+137800 rules inserted. The rule base contains 137552 rules. 59739 rules in the queue.
+138000 rules inserted. The rule base contains 137752 rules. 59882 rules in the queue.
+138200 rules inserted. The rule base contains 137952 rules. 60026 rules in the queue.
+138400 rules inserted. The rule base contains 138152 rules. 60067 rules in the queue.
+138600 rules inserted. The rule base contains 138352 rules. 60108 rules in the queue.
+138800 rules inserted. The rule base contains 138552 rules. 60183 rules in the queue.
+139000 rules inserted. The rule base contains 138752 rules. 60378 rules in the queue.
+139200 rules inserted. The rule base contains 138952 rules. 60425 rules in the queue.
+139400 rules inserted. The rule base contains 139152 rules. 60458 rules in the queue.
+139600 rules inserted. The rule base contains 139352 rules. 60488 rules in the queue.
+139800 rules inserted. The rule base contains 139552 rules. 60598 rules in the queue.
+140000 rules inserted. The rule base contains 139752 rules. 60642 rules in the queue.
+140200 rules inserted. The rule base contains 139952 rules. 60680 rules in the queue.
+140400 rules inserted. The rule base contains 140152 rules. 60709 rules in the queue.
+140600 rules inserted. The rule base contains 140352 rules. 60826 rules in the queue.
+140800 rules inserted. The rule base contains 140552 rules. 60932 rules in the queue.
+141000 rules inserted. The rule base contains 140752 rules. 60973 rules in the queue.
+141200 rules inserted. The rule base contains 140952 rules. 61015 rules in the queue.
+141400 rules inserted. The rule base contains 141152 rules. 61080 rules in the queue.
+141600 rules inserted. The rule base contains 141352 rules. 61225 rules in the queue.
+141800 rules inserted. The rule base contains 141552 rules. 61267 rules in the queue.
+142000 rules inserted. The rule base contains 141752 rules. 61308 rules in the queue.
+142200 rules inserted. The rule base contains 141952 rules. 61395 rules in the queue.
+142400 rules inserted. The rule base contains 142152 rules. 62148 rules in the queue.
+142600 rules inserted. The rule base contains 142352 rules. 62346 rules in the queue.
+142800 rules inserted. The rule base contains 142552 rules. 62544 rules in the queue.
+143000 rules inserted. The rule base contains 142752 rules. 62716 rules in the queue.
+143200 rules inserted. The rule base contains 142952 rules. 62792 rules in the queue.
+143400 rules inserted. The rule base contains 143152 rules. 62890 rules in the queue.
+143600 rules inserted. The rule base contains 143352 rules. 62931 rules in the queue.
+143800 rules inserted. The rule base contains 143552 rules. 62954 rules in the queue.
+144000 rules inserted. The rule base contains 143752 rules. 62975 rules in the queue.
+144200 rules inserted. The rule base contains 143952 rules. 63066 rules in the queue.
+144400 rules inserted. The rule base contains 144152 rules. 63108 rules in the queue.
+144600 rules inserted. The rule base contains 144352 rules. 63141 rules in the queue.
+144800 rules inserted. The rule base contains 144552 rules. 63175 rules in the queue.
+145000 rules inserted. The rule base contains 144752 rules. 63262 rules in the queue.
+145200 rules inserted. The rule base contains 144952 rules. 63301 rules in the queue.
+145400 rules inserted. The rule base contains 145152 rules. 63338 rules in the queue.
+145600 rules inserted. The rule base contains 145352 rules. 63368 rules in the queue.
+145800 rules inserted. The rule base contains 145552 rules. 63415 rules in the queue.
+146000 rules inserted. The rule base contains 145752 rules. 63482 rules in the queue.
+146200 rules inserted. The rule base contains 145952 rules. 63523 rules in the queue.
+146400 rules inserted. The rule base contains 146152 rules. 63552 rules in the queue.
+146600 rules inserted. The rule base contains 146352 rules. 63610 rules in the queue.
+146800 rules inserted. The rule base contains 146552 rules. 63694 rules in the queue.
+147000 rules inserted. The rule base contains 146752 rules. 63736 rules in the queue.
+147200 rules inserted. The rule base contains 146952 rules. 63748 rules in the queue.
+147400 rules inserted. The rule base contains 147152 rules. 63818 rules in the queue.
+147600 rules inserted. The rule base contains 147352 rules. 63892 rules in the queue.
+147800 rules inserted. The rule base contains 147552 rules. 63933 rules in the queue.
+148000 rules inserted. The rule base contains 147752 rules. 63974 rules in the queue.
+148200 rules inserted. The rule base contains 147952 rules. 64032 rules in the queue.
+148400 rules inserted. The rule base contains 148152 rules. 64122 rules in the queue.
+148600 rules inserted. The rule base contains 148352 rules. 64162 rules in the queue.
+148800 rules inserted. The rule base contains 148552 rules. 64204 rules in the queue.
+149000 rules inserted. The rule base contains 148752 rules. 64262 rules in the queue.
+149200 rules inserted. The rule base contains 148952 rules. 64347 rules in the queue.
+149400 rules inserted. The rule base contains 149152 rules. 64388 rules in the queue.
+149600 rules inserted. The rule base contains 149352 rules. 64430 rules in the queue.
+149800 rules inserted. The rule base contains 149552 rules. 64472 rules in the queue.
+150000 rules inserted. The rule base contains 149752 rules. 64582 rules in the queue.
+150200 rules inserted. The rule base contains 149952 rules. 64617 rules in the queue.
+150400 rules inserted. The rule base contains 150152 rules. 64654 rules in the queue.
+150600 rules inserted. The rule base contains 150352 rules. 64668 rules in the queue.
+150800 rules inserted. The rule base contains 150552 rules. 64712 rules in the queue.
+151000 rules inserted. The rule base contains 150752 rules. 64758 rules in the queue.
+151200 rules inserted. The rule base contains 150952 rules. 64800 rules in the queue.
+151400 rules inserted. The rule base contains 151152 rules. 64821 rules in the queue.
+151600 rules inserted. The rule base contains 151352 rules. 64911 rules in the queue.
+151800 rules inserted. The rule base contains 151552 rules. 64968 rules in the queue.
+152000 rules inserted. The rule base contains 151752 rules. 65011 rules in the queue.
+152200 rules inserted. The rule base contains 151952 rules. 65051 rules in the queue.
+152400 rules inserted. The rule base contains 152152 rules. 65120 rules in the queue.
+152600 rules inserted. The rule base contains 152352 rules. 65194 rules in the queue.
+152800 rules inserted. The rule base contains 152552 rules. 65235 rules in the queue.
+153000 rules inserted. The rule base contains 152752 rules. 65277 rules in the queue.
+153200 rules inserted. The rule base contains 152952 rules. 65416 rules in the queue.
+153400 rules inserted. The rule base contains 153152 rules. 65467 rules in the queue.
+153600 rules inserted. The rule base contains 153352 rules. 65500 rules in the queue.
+153800 rules inserted. The rule base contains 153552 rules. 65535 rules in the queue.
+154000 rules inserted. The rule base contains 153752 rules. 65618 rules in the queue.
+154200 rules inserted. The rule base contains 153952 rules. 65710 rules in the queue.
+154400 rules inserted. The rule base contains 154152 rules. 65751 rules in the queue.
+154600 rules inserted. The rule base contains 154352 rules. 65773 rules in the queue.
+154800 rules inserted. The rule base contains 154552 rules. 65821 rules in the queue.
+155000 rules inserted. The rule base contains 154752 rules. 65858 rules in the queue.
+155200 rules inserted. The rule base contains 154952 rules. 65900 rules in the queue.
+155400 rules inserted. The rule base contains 155152 rules. 65922 rules in the queue.
+155600 rules inserted. The rule base contains 155352 rules. 65943 rules in the queue.
+155800 rules inserted. The rule base contains 155552 rules. 66035 rules in the queue.
+156000 rules inserted. The rule base contains 155752 rules. 66076 rules in the queue.
+156200 rules inserted. The rule base contains 155952 rules. 66110 rules in the queue.
+156400 rules inserted. The rule base contains 156152 rules. 66143 rules in the queue.
+156600 rules inserted. The rule base contains 156352 rules. 66216 rules in the queue.
+156800 rules inserted. The rule base contains 156552 rules. 66257 rules in the queue.
+157000 rules inserted. The rule base contains 156752 rules. 66294 rules in the queue.
+157200 rules inserted. The rule base contains 156952 rules. 66324 rules in the queue.
+157400 rules inserted. The rule base contains 157152 rules. 66337 rules in the queue.
+157600 rules inserted. The rule base contains 157352 rules. 66360 rules in the queue.
+157800 rules inserted. The rule base contains 157552 rules. 66393 rules in the queue.
+158000 rules inserted. The rule base contains 157752 rules. 66399 rules in the queue.
+158200 rules inserted. The rule base contains 157952 rules. 66404 rules in the queue.
+158400 rules inserted. The rule base contains 158152 rules. 66427 rules in the queue.
+158600 rules inserted. The rule base contains 158352 rules. 66462 rules in the queue.
+158800 rules inserted. The rule base contains 158552 rules. 66482 rules in the queue.
+159000 rules inserted. The rule base contains 158752 rules. 66502 rules in the queue.
+159200 rules inserted. The rule base contains 158952 rules. 66536 rules in the queue.
+159400 rules inserted. The rule base contains 159152 rules. 66578 rules in the queue.
+159600 rules inserted. The rule base contains 159352 rules. 66607 rules in the queue.
+159800 rules inserted. The rule base contains 159552 rules. 66630 rules in the queue.
+160000 rules inserted. The rule base contains 159752 rules. 66658 rules in the queue.
+160200 rules inserted. The rule base contains 159952 rules. 66700 rules in the queue.
+160400 rules inserted. The rule base contains 160152 rules. 66728 rules in the queue.
+160600 rules inserted. The rule base contains 160352 rules. 66759 rules in the queue.
+160800 rules inserted. The rule base contains 160552 rules. 66822 rules in the queue.
+161000 rules inserted. The rule base contains 160752 rules. 66864 rules in the queue.
+161200 rules inserted. The rule base contains 160952 rules. 66877 rules in the queue.
+161400 rules inserted. The rule base contains 161152 rules. 66868 rules in the queue.
+161600 rules inserted. The rule base contains 161352 rules. 66890 rules in the queue.
+161800 rules inserted. The rule base contains 161552 rules. 66932 rules in the queue.
+162000 rules inserted. The rule base contains 161752 rules. 66945 rules in the queue.
+162200 rules inserted. The rule base contains 161952 rules. 66982 rules in the queue.
+162400 rules inserted. The rule base contains 162152 rules. 67024 rules in the queue.
+162600 rules inserted. The rule base contains 162352 rules. 67065 rules in the queue.
+162800 rules inserted. The rule base contains 162552 rules. 67107 rules in the queue.
+163000 rules inserted. The rule base contains 162752 rules. 67148 rules in the queue.
+163200 rules inserted. The rule base contains 162952 rules. 67190 rules in the queue.
+163400 rules inserted. The rule base contains 163152 rules. 67231 rules in the queue.
+163600 rules inserted. The rule base contains 163352 rules. 67272 rules in the queue.
+163800 rules inserted. The rule base contains 163552 rules. 67312 rules in the queue.
+164000 rules inserted. The rule base contains 163752 rules. 67465 rules in the queue.
+164200 rules inserted. The rule base contains 163952 rules. 67485 rules in the queue.
+164400 rules inserted. The rule base contains 164152 rules. 67520 rules in the queue.
+164600 rules inserted. The rule base contains 164352 rules. 67963 rules in the queue.
+164800 rules inserted. The rule base contains 164552 rules. 68386 rules in the queue.
+165000 rules inserted. The rule base contains 164752 rules. 68567 rules in the queue.
+165200 rules inserted. The rule base contains 164952 rules. 68748 rules in the queue.
+165400 rules inserted. The rule base contains 165152 rules. 68921 rules in the queue.
+165600 rules inserted. The rule base contains 165352 rules. 69072 rules in the queue.
+165800 rules inserted. The rule base contains 165552 rules. 69106 rules in the queue.
+166000 rules inserted. The rule base contains 165752 rules. 69139 rules in the queue.
+166200 rules inserted. The rule base contains 165952 rules. 69269 rules in the queue.
+166400 rules inserted. The rule base contains 166152 rules. 69322 rules in the queue.
+166600 rules inserted. The rule base contains 166352 rules. 69345 rules in the queue.
+166800 rules inserted. The rule base contains 166552 rules. 69380 rules in the queue.
+167000 rules inserted. The rule base contains 166752 rules. 71317 rules in the queue.
+167200 rules inserted. The rule base contains 166952 rules. 72813 rules in the queue.
+167400 rules inserted. The rule base contains 167152 rules. 73131 rules in the queue.
+167600 rules inserted. The rule base contains 167352 rules. 73220 rules in the queue.
+167800 rules inserted. The rule base contains 167552 rules. 73392 rules in the queue.
+168000 rules inserted. The rule base contains 167752 rules. 73524 rules in the queue.
+168200 rules inserted. The rule base contains 167952 rules. 73641 rules in the queue.
+168400 rules inserted. The rule base contains 168152 rules. 73785 rules in the queue.
+168600 rules inserted. The rule base contains 168352 rules. 73927 rules in the queue.
+168800 rules inserted. The rule base contains 168552 rules. 73995 rules in the queue.
+169000 rules inserted. The rule base contains 168752 rules. 74052 rules in the queue.
+169200 rules inserted. The rule base contains 168952 rules. 74105 rules in the queue.
+169400 rules inserted. The rule base contains 169152 rules. 74155 rules in the queue.
+169600 rules inserted. The rule base contains 169352 rules. 74219 rules in the queue.
+169800 rules inserted. The rule base contains 169552 rules. 74286 rules in the queue.
+170000 rules inserted. The rule base contains 169752 rules. 74344 rules in the queue.
+170200 rules inserted. The rule base contains 169952 rules. 74398 rules in the queue.
+170400 rules inserted. The rule base contains 170152 rules. 74496 rules in the queue.
+170600 rules inserted. The rule base contains 170352 rules. 74578 rules in the queue.
+170800 rules inserted. The rule base contains 170552 rules. 74690 rules in the queue.
+171000 rules inserted. The rule base contains 170752 rules. 74761 rules in the queue.
+171200 rules inserted. The rule base contains 170952 rules. 74792 rules in the queue.
+171400 rules inserted. The rule base contains 171152 rules. 74829 rules in the queue.
+171600 rules inserted. The rule base contains 171352 rules. 74863 rules in the queue.
+171800 rules inserted. The rule base contains 171552 rules. 74900 rules in the queue.
+172000 rules inserted. The rule base contains 171752 rules. 74935 rules in the queue.
+172200 rules inserted. The rule base contains 171952 rules. 74976 rules in the queue.
+172400 rules inserted. The rule base contains 172152 rules. 75030 rules in the queue.
+172600 rules inserted. The rule base contains 172352 rules. 75071 rules in the queue.
+172800 rules inserted. The rule base contains 172552 rules. 75112 rules in the queue.
+173000 rules inserted. The rule base contains 172752 rules. 75150 rules in the queue.
+173200 rules inserted. The rule base contains 172952 rules. 75184 rules in the queue.
+173400 rules inserted. The rule base contains 173152 rules. 75214 rules in the queue.
+173600 rules inserted. The rule base contains 173352 rules. 75252 rules in the queue.
+173800 rules inserted. The rule base contains 173552 rules. 75286 rules in the queue.
+174000 rules inserted. The rule base contains 173752 rules. 75322 rules in the queue.
+174200 rules inserted. The rule base contains 173952 rules. 75350 rules in the queue.
+174400 rules inserted. The rule base contains 174152 rules. 75383 rules in the queue.
+174600 rules inserted. The rule base contains 174352 rules. 75413 rules in the queue.
+174800 rules inserted. The rule base contains 174552 rules. 75560 rules in the queue.
+175000 rules inserted. The rule base contains 174752 rules. 75653 rules in the queue.
+175200 rules inserted. The rule base contains 174952 rules. 75789 rules in the queue.
+175400 rules inserted. The rule base contains 175152 rules. 75861 rules in the queue.
+175600 rules inserted. The rule base contains 175352 rules. 75901 rules in the queue.
+175800 rules inserted. The rule base contains 175552 rules. 76007 rules in the queue.
+176000 rules inserted. The rule base contains 175752 rules. 76112 rules in the queue.
+176200 rules inserted. The rule base contains 175952 rules. 76272 rules in the queue.
+176400 rules inserted. The rule base contains 176152 rules. 76384 rules in the queue.
+176600 rules inserted. The rule base contains 176352 rules. 76472 rules in the queue.
+176800 rules inserted. The rule base contains 176552 rules. 76636 rules in the queue.
+177000 rules inserted. The rule base contains 176752 rules. 76752 rules in the queue.
+177200 rules inserted. The rule base contains 176952 rules. 76882 rules in the queue.
+177400 rules inserted. The rule base contains 177152 rules. 77022 rules in the queue.
+177600 rules inserted. The rule base contains 177352 rules. 77063 rules in the queue.
+177800 rules inserted. The rule base contains 177552 rules. 77105 rules in the queue.
+178000 rules inserted. The rule base contains 177752 rules. 77147 rules in the queue.
+178200 rules inserted. The rule base contains 177952 rules. 77184 rules in the queue.
+178400 rules inserted. The rule base contains 178152 rules. 77219 rules in the queue.
+178600 rules inserted. The rule base contains 178352 rules. 77260 rules in the queue.
+178800 rules inserted. The rule base contains 178552 rules. 77295 rules in the queue.
+179000 rules inserted. The rule base contains 178752 rules. 77317 rules in the queue.
+179200 rules inserted. The rule base contains 178952 rules. 77357 rules in the queue.
+179400 rules inserted. The rule base contains 179152 rules. 77536 rules in the queue.
+179600 rules inserted. The rule base contains 179352 rules. 77677 rules in the queue.
+179800 rules inserted. The rule base contains 179552 rules. 77797 rules in the queue.
+180000 rules inserted. The rule base contains 179752 rules. 77837 rules in the queue.
+180200 rules inserted. The rule base contains 179952 rules. 77877 rules in the queue.
+180400 rules inserted. The rule base contains 180152 rules. 77917 rules in the queue.
+180600 rules inserted. The rule base contains 180352 rules. 77957 rules in the queue.
+180800 rules inserted. The rule base contains 180552 rules. 77997 rules in the queue.
+181000 rules inserted. The rule base contains 180752 rules. 78080 rules in the queue.
+181200 rules inserted. The rule base contains 180952 rules. 78137 rules in the queue.
+181400 rules inserted. The rule base contains 181152 rules. 78230 rules in the queue.
+181600 rules inserted. The rule base contains 181352 rules. 78274 rules in the queue.
+181800 rules inserted. The rule base contains 181552 rules. 78316 rules in the queue.
+182000 rules inserted. The rule base contains 181752 rules. 78360 rules in the queue.
+182200 rules inserted. The rule base contains 181952 rules. 78398 rules in the queue.
+182400 rules inserted. The rule base contains 182152 rules. 78440 rules in the queue.
+182600 rules inserted. The rule base contains 182352 rules. 78484 rules in the queue.
+182800 rules inserted. The rule base contains 182552 rules. 78522 rules in the queue.
+183000 rules inserted. The rule base contains 182752 rules. 78566 rules in the queue.
+183200 rules inserted. The rule base contains 182952 rules. 78608 rules in the queue.
+183400 rules inserted. The rule base contains 183152 rules. 78652 rules in the queue.
+183600 rules inserted. The rule base contains 183352 rules. 78692 rules in the queue.
+183800 rules inserted. The rule base contains 183552 rules. 78736 rules in the queue.
+184000 rules inserted. The rule base contains 183752 rules. 78774 rules in the queue.
+184200 rules inserted. The rule base contains 183952 rules. 78812 rules in the queue.
+184400 rules inserted. The rule base contains 184152 rules. 78856 rules in the queue.
+184600 rules inserted. The rule base contains 184352 rules. 78894 rules in the queue.
+184800 rules inserted. The rule base contains 184552 rules. 78938 rules in the queue.
+185000 rules inserted. The rule base contains 184752 rules. 78976 rules in the queue.
+185200 rules inserted. The rule base contains 184952 rules. 79016 rules in the queue.
+185400 rules inserted. The rule base contains 185152 rules. 79058 rules in the queue.
+185600 rules inserted. The rule base contains 185352 rules. 79099 rules in the queue.
+185800 rules inserted. The rule base contains 185552 rules. 79142 rules in the queue.
+186000 rules inserted. The rule base contains 185752 rules. 79184 rules in the queue.
+186200 rules inserted. The rule base contains 185952 rules. 79228 rules in the queue.
+186400 rules inserted. The rule base contains 186152 rules. 79266 rules in the queue.
+186600 rules inserted. The rule base contains 186352 rules. 79310 rules in the queue.
+186800 rules inserted. The rule base contains 186552 rules. 79348 rules in the queue.
+187000 rules inserted. The rule base contains 186752 rules. 79388 rules in the queue.
+187200 rules inserted. The rule base contains 186952 rules. 79436 rules in the queue.
+187400 rules inserted. The rule base contains 187152 rules. 79482 rules in the queue.
+187600 rules inserted. The rule base contains 187352 rules. 79528 rules in the queue.
+187800 rules inserted. The rule base contains 187550 rules. 80332 rules in the queue.
+188000 rules inserted. The rule base contains 187750 rules. 81644 rules in the queue.
+188200 rules inserted. The rule base contains 187950 rules. 82470 rules in the queue.
+188400 rules inserted. The rule base contains 188150 rules. 83323 rules in the queue.
+188600 rules inserted. The rule base contains 188350 rules. 84208 rules in the queue.
+188800 rules inserted. The rule base contains 188550 rules. 85102 rules in the queue.
+189000 rules inserted. The rule base contains 188750 rules. 85136 rules in the queue.
+189200 rules inserted. The rule base contains 188950 rules. 85169 rules in the queue.
+189400 rules inserted. The rule base contains 189150 rules. 85202 rules in the queue.
+189600 rules inserted. The rule base contains 189350 rules. 85379 rules in the queue.
+189800 rules inserted. The rule base contains 189550 rules. 85934 rules in the queue.
+190000 rules inserted. The rule base contains 189750 rules. 86357 rules in the queue.
+190200 rules inserted. The rule base contains 189950 rules. 86724 rules in the queue.
+190400 rules inserted. The rule base contains 190150 rules. 86815 rules in the queue.
+190600 rules inserted. The rule base contains 190350 rules. 86849 rules in the queue.
+190800 rules inserted. The rule base contains 190550 rules. 86882 rules in the queue.
+191000 rules inserted. The rule base contains 190750 rules. 86985 rules in the queue.
+191200 rules inserted. The rule base contains 190950 rules. 87502 rules in the queue.
+191400 rules inserted. The rule base contains 191150 rules. 87929 rules in the queue.
+191600 rules inserted. The rule base contains 191350 rules. 88340 rules in the queue.
+191800 rules inserted. The rule base contains 191550 rules. 88494 rules in the queue.
+192000 rules inserted. The rule base contains 191750 rules. 88528 rules in the queue.
+192200 rules inserted. The rule base contains 191950 rules. 88561 rules in the queue.
+192400 rules inserted. The rule base contains 192150 rules. 88606 rules in the queue.
+192600 rules inserted. The rule base contains 192350 rules. 89014 rules in the queue.
+192800 rules inserted. The rule base contains 192550 rules. 89422 rules in the queue.
+193000 rules inserted. The rule base contains 192750 rules. 89794 rules in the queue.
+193200 rules inserted. The rule base contains 192950 rules. 89920 rules in the queue.
+193400 rules inserted. The rule base contains 193150 rules. 89953 rules in the queue.
+193600 rules inserted. The rule base contains 193350 rules. 89986 rules in the queue.
+193800 rules inserted. The rule base contains 193550 rules. 90141 rules in the queue.
+194000 rules inserted. The rule base contains 193750 rules. 90887 rules in the queue.
+194200 rules inserted. The rule base contains 193950 rules. 91709 rules in the queue.
+194400 rules inserted. The rule base contains 194150 rules. 92100 rules in the queue.
+194600 rules inserted. The rule base contains 194350 rules. 92124 rules in the queue.
+194800 rules inserted. The rule base contains 194550 rules. 92144 rules in the queue.
+195000 rules inserted. The rule base contains 194750 rules. 92148 rules in the queue.
+195200 rules inserted. The rule base contains 194950 rules. 92426 rules in the queue.
+195400 rules inserted. The rule base contains 195150 rules. 92757 rules in the queue.
+195600 rules inserted. The rule base contains 195350 rules. 93002 rules in the queue.
+195800 rules inserted. The rule base contains 195550 rules. 93036 rules in the queue.
+196000 rules inserted. The rule base contains 195750 rules. 93071 rules in the queue.
+196200 rules inserted. The rule base contains 195950 rules. 93105 rules in the queue.
+196400 rules inserted. The rule base contains 196150 rules. 93214 rules in the queue.
+196600 rules inserted. The rule base contains 196350 rules. 93621 rules in the queue.
+196800 rules inserted. The rule base contains 196550 rules. 93929 rules in the queue.
+197000 rules inserted. The rule base contains 196750 rules. 94004 rules in the queue.
+197200 rules inserted. The rule base contains 196950 rules. 94039 rules in the queue.
+197400 rules inserted. The rule base contains 197150 rules. 94073 rules in the queue.
+197600 rules inserted. The rule base contains 197350 rules. 94107 rules in the queue.
+197800 rules inserted. The rule base contains 197550 rules. 94408 rules in the queue.
+198000 rules inserted. The rule base contains 197750 rules. 94718 rules in the queue.
+198200 rules inserted. The rule base contains 197950 rules. 94863 rules in the queue.
+198400 rules inserted. The rule base contains 198150 rules. 94897 rules in the queue.
+198600 rules inserted. The rule base contains 198350 rules. 94931 rules in the queue.
+198800 rules inserted. The rule base contains 198550 rules. 94966 rules in the queue.
+199000 rules inserted. The rule base contains 198750 rules. 95528 rules in the queue.
+199200 rules inserted. The rule base contains 198950 rules. 96191 rules in the queue.
+199400 rules inserted. The rule base contains 199150 rules. 96507 rules in the queue.
+199600 rules inserted. The rule base contains 199350 rules. 96529 rules in the queue.
+199800 rules inserted. The rule base contains 199550 rules. 96541 rules in the queue.
+200000 rules inserted. The rule base contains 199750 rules. 96547 rules in the queue.
+200200 rules inserted. The rule base contains 199950 rules. 96793 rules in the queue.
+200400 rules inserted. The rule base contains 200150 rules. 96999 rules in the queue.
+200600 rules inserted. The rule base contains 200350 rules. 97023 rules in the queue.
+200800 rules inserted. The rule base contains 200550 rules. 97047 rules in the queue.
+201000 rules inserted. The rule base contains 200750 rules. 97054 rules in the queue.
+201200 rules inserted. The rule base contains 200950 rules. 97132 rules in the queue.
+201400 rules inserted. The rule base contains 201150 rules. 97408 rules in the queue.
+201600 rules inserted. The rule base contains 201350 rules. 97598 rules in the queue.
+201800 rules inserted. The rule base contains 201550 rules. 97632 rules in the queue.
+202000 rules inserted. The rule base contains 201750 rules. 97667 rules in the queue.
+202200 rules inserted. The rule base contains 201950 rules. 97701 rules in the queue.
+202400 rules inserted. The rule base contains 202150 rules. 97798 rules in the queue.
+202600 rules inserted. The rule base contains 202350 rules. 98034 rules in the queue.
+202800 rules inserted. The rule base contains 202550 rules. 98198 rules in the queue.
+203000 rules inserted. The rule base contains 202750 rules. 98232 rules in the queue.
+203200 rules inserted. The rule base contains 202950 rules. 98267 rules in the queue.
+203400 rules inserted. The rule base contains 203150 rules. 98301 rules in the queue.
+203600 rules inserted. The rule base contains 203350 rules. 99120 rules in the queue.
+203800 rules inserted. The rule base contains 203550 rules. 100389 rules in the queue.
+204000 rules inserted. The rule base contains 203750 rules. 101799 rules in the queue.
+204200 rules inserted. The rule base contains 203950 rules. 103244 rules in the queue.
+204400 rules inserted. The rule base contains 204132 rules. 104853 rules in the queue.
+204600 rules inserted. The rule base contains 204332 rules. 105304 rules in the queue.
+204800 rules inserted. The rule base contains 204528 rules. 105970 rules in the queue.
+205000 rules inserted. The rule base contains 204728 rules. 106299 rules in the queue.
+205200 rules inserted. The rule base contains 204928 rules. 106824 rules in the queue.
+205400 rules inserted. The rule base contains 205124 rules. 107432 rules in the queue.
+205600 rules inserted. The rule base contains 205320 rules. 108644 rules in the queue.
+205800 rules inserted. The rule base contains 205520 rules. 108859 rules in the queue.
+206000 rules inserted. The rule base contains 205720 rules. 109378 rules in the queue.
+206200 rules inserted. The rule base contains 205920 rules. 109728 rules in the queue.
+206400 rules inserted. The rule base contains 206120 rules. 109744 rules in the queue.
+206600 rules inserted. The rule base contains 206320 rules. 109744 rules in the queue.
+206800 rules inserted. The rule base contains 206520 rules. 109732 rules in the queue.
+207000 rules inserted. The rule base contains 206720 rules. 109917 rules in the queue.
+207200 rules inserted. The rule base contains 206920 rules. 110060 rules in the queue.
+207400 rules inserted. The rule base contains 207120 rules. 110084 rules in the queue.
+207600 rules inserted. The rule base contains 207320 rules. 110105 rules in the queue.
+207800 rules inserted. The rule base contains 207520 rules. 110112 rules in the queue.
+208000 rules inserted. The rule base contains 207720 rules. 110252 rules in the queue.
+208200 rules inserted. The rule base contains 207920 rules. 110442 rules in the queue.
+208400 rules inserted. The rule base contains 208120 rules. 110468 rules in the queue.
+208600 rules inserted. The rule base contains 208320 rules. 110494 rules in the queue.
+208800 rules inserted. The rule base contains 208520 rules. 110500 rules in the queue.
+209000 rules inserted. The rule base contains 208720 rules. 110535 rules in the queue.
+209200 rules inserted. The rule base contains 208920 rules. 110733 rules in the queue.
+209400 rules inserted. The rule base contains 209120 rules. 110796 rules in the queue.
+209600 rules inserted. The rule base contains 209320 rules. 110822 rules in the queue.
+209800 rules inserted. The rule base contains 209520 rules. 110838 rules in the queue.
+210000 rules inserted. The rule base contains 209720 rules. 110951 rules in the queue.
+210200 rules inserted. The rule base contains 209920 rules. 111394 rules in the queue.
+210400 rules inserted. The rule base contains 210120 rules. 111549 rules in the queue.
+210600 rules inserted. The rule base contains 210320 rules. 111555 rules in the queue.
+210800 rules inserted. The rule base contains 210520 rules. 111532 rules in the queue.
+211000 rules inserted. The rule base contains 210720 rules. 111571 rules in the queue.
+211200 rules inserted. The rule base contains 210920 rules. 111669 rules in the queue.
+211400 rules inserted. The rule base contains 211120 rules. 111753 rules in the queue.
+211600 rules inserted. The rule base contains 211320 rules. 111787 rules in the queue.
+211800 rules inserted. The rule base contains 211520 rules. 111823 rules in the queue.
+212000 rules inserted. The rule base contains 211720 rules. 111857 rules in the queue.
+212200 rules inserted. The rule base contains 211920 rules. 111954 rules in the queue.
+212400 rules inserted. The rule base contains 212120 rules. 112050 rules in the queue.
+212600 rules inserted. The rule base contains 212320 rules. 112102 rules in the queue.
+212800 rules inserted. The rule base contains 212520 rules. 112138 rules in the queue.
+213000 rules inserted. The rule base contains 212720 rules. 112173 rules in the queue.
+213200 rules inserted. The rule base contains 212920 rules. 112241 rules in the queue.
+213400 rules inserted. The rule base contains 213120 rules. 112327 rules in the queue.
+213600 rules inserted. The rule base contains 213320 rules. 112411 rules in the queue.
+213800 rules inserted. The rule base contains 213520 rules. 112445 rules in the queue.
+214000 rules inserted. The rule base contains 213720 rules. 112482 rules in the queue.
+214200 rules inserted. The rule base contains 213920 rules. 112517 rules in the queue.
+214400 rules inserted. The rule base contains 214120 rules. 112970 rules in the queue.
+214600 rules inserted. The rule base contains 214320 rules. 113218 rules in the queue.
+214800 rules inserted. The rule base contains 214520 rules. 113224 rules in the queue.
+215000 rules inserted. The rule base contains 214720 rules. 113236 rules in the queue.
+215200 rules inserted. The rule base contains 214920 rules. 113210 rules in the queue.
