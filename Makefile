@@ -12,7 +12,7 @@ all: otrv4_brace.pv.out otrv4_nobrace.pv.out \
 otrv4_nobrace.pv: otrv4.pv
 	cpp -UBRACE -P $< >$@
 
-otrv4_dh_detsig.pv: otrv4.pv
+otrv4_brace.pv: otrv4.pv
 	cpp -DBRACE -P $< >$@
 
 clean:
